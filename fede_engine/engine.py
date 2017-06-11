@@ -355,10 +355,43 @@ def evalute516():
         guesses = [g[0] for g in sorted_x_table[:topn]]
         solution = df.solution[i].upper()
         correct = solution in guesses
-        #print('{}: words: {} guessed: {} solution: {} correct: {}'.format(i+1, words, guesses, solution, correct))
+        print('{}: words: {} guessed: {} solution: {} correct: {}'.format(i+1, words, guesses, solution, correct))
         results.update({correct:1})
     print(results)
     # Counter({True: 332, False: 185})
+
+def evalute_basile_2016():
+    import pandas as pd    
+    from collections import Counter
+    print('Loading association table...')
+    association_table = openPaisaAssociationMatrix()
+    print('Loaded')
+    files = ["../data/ghigliottina_tv.csv", "../data/ghigliottine_board.csv"]
+    for f in files:
+        df = pd.read_csv(f)
+        df = df.dropna()
+        results = {
+            1: Counter({False:0, True:0}),
+            5: Counter({False:0, True:0}),
+            10: Counter({False:0, True:0}),
+            100: Counter({False:0, True:0}),
+        }
+        for i in range(len(df)):
+            words = [w.upper() for w in set(df.iloc[i,0:5].values)]
+            x_table, sorted_x_table = getBestWordAssociation(association_table, words)
+            for topn in results.keys():
+                guesses = [g[0] for g in sorted_x_table[:topn]]
+                solution = df.solution[i].upper()
+                correct = solution in guesses
+                if topn==10:
+                    print('{}: words: {} guessed: {} solution: {} correct: {}'.format(i+1, words, guesses, solution, correct))
+                results[topn].update({correct:1})
+        print('File: {}'.format(f))
+        for k in results:            
+            c = results[k]
+            correct, wrong, total = c[True], c[False], sum(c.values())
+            p = float(correct)/total
+            print('P@{}: {} --> Correct: {} Wrong: {} Total: {}'.format(k, p, correct, wrong, total))
 
 def run():
     #buildPaisaAssociationMatrix()
