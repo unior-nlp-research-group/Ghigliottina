@@ -360,7 +360,7 @@ def evalute516():
     print(results)
     # Counter({True: 332, False: 185})
 
-def evalute_basile_2016():
+def evalute_basile_2016(method56=False):
     import pandas as pd    
     from collections import Counter
     print('Loading association table...')
@@ -379,12 +379,18 @@ def evalute_basile_2016():
         for i in range(len(df)):
             words = [w.upper() for w in set(df.iloc[i,0:5].values)]
             x_table, sorted_x_table = getBestWordAssociation(association_table, words)
-            for topn in results.keys():
-                guesses = [g[0] for g in sorted_x_table[:topn]]
+            sorted_x_table_5 = [x for x in sorted_x_table if x[1]['elements'] == 5]
+            sorted_x_table_4 = [x for x in sorted_x_table if x[1]['elements'] == 4]
+            for topn in results.keys():                
+                if method56 and topn!=1:
+                    half = topn//2
+                    guesses = [g[0] for g in sorted_x_table_5[:half]] + [g[0] for g in sorted_x_table_4[:half]]
+                else:
+                    guesses = [g[0] for g in sorted_x_table[:topn]]
                 solution = df.solution[i].upper()
                 correct = solution in guesses
-                if topn==10:
-                    print('{}: words: {} guessed: {} solution: {} correct: {}'.format(i+1, words, guesses, solution, correct))
+                #if topn==10:
+                #    print('{}: words: {} guessed: {} solution: {} correct: {}'.format(i+1, words, guesses, solution, correct))
                 results[topn].update({correct:1})
         print('File: {}'.format(f))
         for k in results:            
