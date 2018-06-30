@@ -172,8 +172,8 @@ def write_lexicon_to_file(sorted_list, file_out):
             f_out.write(w + '\n')
 
 def check_dizionario_polirematiche_base_coverage():
-    import core
-    import resources
+    import corpora
+    import scorer
     dizionario = get_dizionario_base_set(False)
     polirematiche = get_polirematiche_set(True)
     for p in polirematiche:
@@ -183,15 +183,15 @@ def check_dizionario_polirematiche_base_coverage():
     write_lexicon_to_file(sorted(dizionario), DIZ_POLI_WORD_SORTED_FILE)
     report_coverage_file = DE_MAURO_PATH + 'diz_poli_game_coverage.txt'    
     lexicon_freq = {w:1 for w in dizionario}
-    core.computeCoverageOfGameWordLex(lexicon_freq, resources.GAME_SET_100_FILE, report_coverage_file) 
+    scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, report_coverage_file) 
 
 def check_dizionario_base_base_coverage():
-    import core
-    import resources
+    import corpora
+    import scorer
     dizionario = get_dizionario_base_set(False)
     lexicon_freq = {w:1 for w in dizionario}
     report_coverage_file = DE_MAURO_PATH + 'diz_base_game_coverage.txt'    
-    core.computeCoverageOfGameWordLex(lexicon_freq, resources.GAME_SET_100_FILE, report_coverage_file) 
+    scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, report_coverage_file) 
 
 
 if __name__=='__main__':

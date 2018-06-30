@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 
+import gzip
+
 GAME_SET_100_FILE = "/Users/fedja/scratch/Ghigliottina/annotated_game_words.txt"
 
 # CORPORA
@@ -97,16 +99,57 @@ WIKI_IT_TITLES_PROCESSED = '/Users/fedja/scratch/CORPORA/Wiki_IT/itwiki-latest-a
 WIKI_DATA_PEOPLE_FILE = "/Users/fedja/scratch/CORPORA/WikiData/people_it.json" # 7984 (7361 unique if splitting names)
 # [{'human':'url', 'name': 'first middle last'}, {...}]
 
+def extract_lines(corpus_info, report_every=100000):
+    import re    
+    name = corpus_info['name']
+    file = corpus_info['file']
+    compressed = corpus_info['compressed']
+    encoding = corpus_info['encoding']
+    exclude_pattern = corpus_info['exlude_pattern']
+    print("extracting lines from {}".format(name))
+    pattern = re.compile(exclude_pattern) if exclude_pattern else None
+    line_count = 0
+    opener = gzip.open if compressed else open
+    with opener(file, 'rt', encoding=encoding) as f:
+        for l in f:
+            if pattern and pattern.match(l):
+                continue
+            line_count += 1
+            if line_count%report_every==0:
+                print(line_count)
+            yield l
+        print("extracted lines: {}".format(line_count))
+        
+
+def countLinesInCompressedFile(file_in, encoding):
+    with gzip.open(file_in, 'rt', encoding=encoding) as f:
+        for i,l in enumerate(f, 1):
+            pass
+        return i
+
+def countWordsInCompressedFile(file_in, encoding):
+    with gzip.open(file_in, 'rt', encoding=encoding) as f:
+        words = 0
+        for i,l in enumerate(f, 1):
+            if i%500000==0:
+                print(i)
+            words += len(l.split())
+    return words
+
+###################
+# LOCAL FUNCTIONS
+###################
+
 def analizeFreq(corpus_info):
-    import core
+    import patterns_extraction    
     from collections import defaultdict
-    lines_extractor = core.extract_lines(corpus_info)
+    lines_extractor = corpora.extract_lines(corpus_info)
     lex_freq = defaultdict(int)
     for line in lines_extractor:
-        tokens = core.tokenizeLineReplaceWordCats(line)
+        tokens = patterns_extraction.tokenizeLineReplaceWordCats(line)
         for t in tokens:
             lex_freq[t] += 1
-    for CAT in core.ALL_CATS:
+    for CAT in patterns_extraction.ALL_CATS:
         if CAT in lex_freq:
             del lex_freq[CAT]  
     with open(PAISA_LEX_FREQ_FILE, 'w') as f_out:
@@ -114,9 +157,9 @@ def analizeFreq(corpus_info):
             f_out.write('{}\t{}\n'.format(f,w))
 
 def buildPaisaPosLexFile(pos):   
-    import core 
+    import patterns_extraction 
     from collections import defaultdict
-    lines_extractor = core.extract_lines(PAISA_CONLL_INFO, report_every=1000000)
+    lines_extractor = corpora.extract_lines(PAISA_CONLL_INFO, report_every=1000000)
     pos_lex_freq = defaultdict(int)
     token_count = 0
     for line in lines_extractor:
@@ -125,7 +168,7 @@ def buildPaisaPosLexFile(pos):
             continue
         token_count += 1
         word = fields[1].lower()
-        if fields[3]==pos and core.VALID_WORD_PATTERN.match(word):            
+        if fields[3]==pos and patterns_extraction.VALID_WORD_PATTERN.match(word):            
             pos_lex_freq[word] += 1
     print('Read tokens: {}'.format(token_count))
     return pos_lex_freq
