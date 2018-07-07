@@ -52,9 +52,10 @@ PROVERBI_INFO = {
     'exlude_pattern': False
 }
 
-PAISA_LEX_FREQ_FILE = PAISA_RAW_INFO['file'] + '_lex_freq.txt'
-PAISA_SOSTANTIVI_FREQ_FILE = '/Users/fedja/scratch/CORPORA/PAISA/sostantivi_freq.txt'
-PAISA_AGGETTIVI_FREQ_FILE = '/Users/fedja/scratch/CORPORA/PAISA/aggettivi_freq.txt'
+PAISA_FREQ_STAT_PATH = '/Users/fedja/scratch/CORPORA/PAISA/freq_stats/'
+PAISA_LEX_FREQ_FILE = PAISA_FREQ_STAT_PATH + 'lex_freq.txt'
+PAISA_SOSTANTIVI_FREQ_FILE = PAISA_FREQ_STAT_PATH + 'sostantivi_freq.txt'
+PAISA_AGGETTIVI_FREQ_FILE = PAISA_FREQ_STAT_PATH + 'aggettivi_freq.txt'
 
 ITWAC_RAW_INFO = {
     'name': 'ITWAC_RAW',
@@ -136,6 +137,15 @@ def countWordsInCompressedFile(file_in, encoding):
             words += len(l.split())
     return words
 
+def addBigramFromPolirematicheInMatrix(matrix, weight=1, solution_lexicon=None):    
+    import patterns_extraction
+    with open(POLIREMATICHE_SORTED_FILE, 'r') as f_in:
+        for line in f_in:
+            words = patterns_extraction.tokenizeLine(line)
+            if len(words)==2:
+                matrix.increase_association_score(words[0], words[1], weight, solution_lexicon)
+
+
 ###################
 # LOCAL FUNCTIONS
 ###################
@@ -156,6 +166,10 @@ def analizeFreq(corpus_info):
         for w,f in sorted(lex_freq.items(), key=lambda x: -x[1]):
             f_out.write('{}\t{}\n'.format(f,w))
 
+####################
+# PAISA FUNCTIONS
+####################
+
 def buildPaisaPosLexFile(pos):   
     import patterns_extraction 
     from collections import defaultdict
@@ -174,21 +188,21 @@ def buildPaisaPosLexFile(pos):
     return pos_lex_freq
 
 def buildPaisaSostantiviFile():
-    import core
+    import lexicon
     sost_lex_freq = buildPaisaPosLexFile('S')
-    core.printLexFreqToFile(sost_lex_freq, PAISA_SOSTANTIVI_FREQ_FILE)    
+    lexicon.printLexFreqToFile(sost_lex_freq, PAISA_SOSTANTIVI_FREQ_FILE)    
 
 def buildPaisaAggettiviFile():
-    import core
+    import lexicon
     sost_lex_freq = buildPaisaPosLexFile('A')
-    core.printLexFreqToFile(sost_lex_freq, PAISA_AGGETTIVI_FREQ_FILE)    
+    lexicon.printLexFreqToFile(sost_lex_freq, PAISA_AGGETTIVI_FREQ_FILE)    
 
 def builDizAugmentedPaisa(lexPosFreqFile, lexPosBaseFile, min_freq, output_file):    
-    import core
+    import lexicon
     vowels = [v for v in 'aeiou']    
     output_file_log = output_file + '_log'
-    paisa_pos_lex_freq = core.loadLexFreqFromFile(lexPosFreqFile)
-    diz_base = core.loadLexiconFromFile(lexPosBaseFile)
+    paisa_pos_lex_freq = lexicon.loadLexFreqFromFile(lexPosFreqFile)
+    diz_base = lexicon.loadLexiconFromFile(lexPosBaseFile)
     diz_sostantivi_prefix = set()
     for w in diz_base:
         if len(w)>1 and w[-1] in vowels:
@@ -199,7 +213,7 @@ def builDizAugmentedPaisa(lexPosFreqFile, lexPosBaseFile, min_freq, output_file)
                 diz_base.add(w)
                 origin = next(o for o in diz_base if o[:-1]==w[:-1] and o!=w and len(o)==len(w) and o[-1] in vowels)
                 f_out.write('{}->{}\n'.format(origin, w))
-    core.printLexiconToFile(diz_base, output_file)
+    lexicon.printLexiconToFile(diz_base, output_file)
 
 def builDizSostantiviAugmentedPaisa():
     min_freq = 1000
@@ -213,6 +227,8 @@ def builDizAggettiviAugmentedPaisa():
     lexPosBaseFile = DIZIONARIO_BASE_AGGETTIVI_FILE
     builDizAugmentedPaisa(lexPosFreqFile, lexPosBaseFile, min_freq, DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_FILE)
 
+############
+
 def getLemmasInflectionDict():
     from collections import defaultdict
     dict = defaultdict(list)
@@ -223,20 +239,20 @@ def getLemmasInflectionDict():
     return dict
 
 def buildDizSostantiviAugmentedPaisaInflected():
-    import core     
+    import lexicon     
     lemma_inflections_dict = getLemmasInflectionDict()
     diz_base_inflected = [
         [DIZIONARIO_SOSTANTIVI_AUGMENTED_PAISA_FILE, DIZIONARIO_SOSTANTIVI_AUGMENTED_PAISA_INFLECTED_FILE],
         [DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_FILE, DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_INFLECTED_FILE]
     ]
     for diz_base_file, diz_inflected_file in diz_base_inflected:
-        word_set = core.loadLexiconFromFile(diz_base_file) # set
+        word_set = lexicon.loadLexiconFromFile(diz_base_file) # set
         inflected_words = set()
         for lemma in word_set:
             if lemma in lemma_inflections_dict:
                 inflected_words.update(lemma_inflections_dict[lemma])
         word_set.update(inflected_words)
-        core.printLexiconToFile(inflected_words, diz_inflected_file)
+        lexicon.printLexiconToFile(inflected_words, diz_inflected_file)
 
 def post_process_wiki_it_titles():
     with open(WIKI_IT_TITLES, 'r') as f_in, open(WIKI_IT_TITLES_PROCESSED, 'w') as f_out:

@@ -174,10 +174,11 @@ def write_lexicon_to_file(sorted_list, file_out):
 def check_dizionario_polirematiche_base_coverage():
     import corpora
     import scorer
+    import patterns_extraction
     dizionario = get_dizionario_base_set(False)
     polirematiche = get_polirematiche_set(True)
     for p in polirematiche:
-        p = p.replace("'"," ")
+        p = patterns_extraction.tokenizeLine(p)
         for w in p.split():
             dizionario.add(w)
     write_lexicon_to_file(sorted(dizionario), DIZ_POLI_WORD_SORTED_FILE)

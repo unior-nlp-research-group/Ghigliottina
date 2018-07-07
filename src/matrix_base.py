@@ -18,11 +18,13 @@ class Matrix_Base:
 
     def increase_association_score(self, w1, w2, weight=1, solution_lexicon=None):
         if solution_lexicon:
+            # non symmetric matrix -> keys are only those in solution_lexicon
             if w1 in solution_lexicon:
                 self.increase_weight(w1,w2,weight)
             if w2 in solution_lexicon:
                 self.increase_weight(w2,w1,weight)
         else:        
+            # symmetric matrix
             self.increase_weight(w1,w2,weight)
             self.increase_weight(w2,w1,weight)
 
@@ -33,7 +35,7 @@ class Matrix_Base:
     #def read_matrix_from_file(self, file_input)
     #def write_matrix_to_file(self, file_output)
     #def increase_weight(self, w1, w2, weight)
-    #def compute_association_scores(self, simmetric=True)
+    #def compute_association_scores(self, symmetric=True)
     #def get_association_score(self, w1, w2)
     #def get_min_association_score(self)
     #def get_max_association_score(matrix)

@@ -12,7 +12,7 @@ import patterns_extraction
 ## MODEL 01 BASE
 ###################
 
-OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_01_paisa/"
+OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_01_paisa_dict/"
 
 PRUNE_GE_FREQ = 50
 

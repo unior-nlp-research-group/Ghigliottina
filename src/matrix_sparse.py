@@ -5,6 +5,7 @@ import math
 import utility
 from matrix_base import Matrix_Base
 import numpy as np
+import scipy.sparse
 from scipy.sparse import dok_matrix
 
 class Matrix_Sparse(Matrix_Base):
@@ -12,20 +13,22 @@ class Matrix_Sparse(Matrix_Base):
     def __init__(self, lex=None):
         super().__init__(lex) # initialize lex
         self.lex_indexes = {} # word -> index of word
+        self.indexes_lex = {} # index -> word
         if lex:
             self.table = dok_matrix((len(lex), len(lex)), dtype=np.float32)
             for l in lex:
-                self.lex_indexes.setdefault(l, len(lex_indexes)) 
+                l_index = self.lex_indexes.setdefault(l, len(self.lex_indexes)) 
+                self.indexes_lex[l_index] = l
 
-
-    # double check
+    # read from .npz file
     def read_matrix_from_file(self, file_input):
-        self.table = utility.loadObjFromPklFile(file_input)
+        csf_matrix = scipy.sparse.load_npz(file_input)
+        self.table = csf_matrix.todok()
 
-    # double check
+    # save to .npz file
     def write_matrix_to_file(self, file_output):
-        self.table = utility.default_to_regular(self.table)
-        utility.dumpObjToPklFile(self.table, file_output)
+        csf_matrix = self.table.tocsr()
+        scipy.sparse.save_npz(file_output, csf_matrix)
 
     ##############################
     # Defined in base class
@@ -33,80 +36,70 @@ class Matrix_Sparse(Matrix_Base):
     # def add_patterns_from_corpus(self, corpus_info, weight=1, solution_lexicon=None)
     # def increase_association_score(self, w1, w2, weight=1, solution_lexicon=None)
 
-    def get_word_index(w):
-        return self.lex_indexes[w]
+    def get_word_index(self, w):
+        return self.lex_indexes.get(w, None)
 
     def increase_weight(self, w1, w2, weight):
-        i1 = get_word_index(w1)
-        i2 = get_word_index(w2)
+        i1 = self.get_word_index(w1)
+        i2 = self.get_word_index(w2)
         self.table[i1,i2] += weight
 
-    def compute_association_scores(self, simmetric=True):
+    def compute_association_scores(self, symmetric=True):
         print("Computing association scores")
         # word_prob = {w:sum(self.table[w].values())/total_pairs for w in self.table.keys()}
         # pointwise mutual information f(A,B) / (f(A)·f(B))  //leaving out proportional factor sum
-        total_pairs = sum([sum(d.values()) for d in self.table.values()])/2
-        print('Total pairs: {}'.format(total_pairs))
-        if simmetric:
-            word_freq_in_pairs = {w:sum(self.table[w].values()) for w in self.table.keys()}                        
-        else:
-            word_freq_in_pairs = defaultdict(int)
-            rows = self.table.keys()
-            for w in self.table.keys():
-                word_freq_in_pairs[w] = sum(self.table[w].values())
-            for sub_table in self.table.values():
-                for w,f in sub_table.items():
-                    if w not in rows:
-                        word_freq_in_pairs[w] += f
-        for x,x_friends in self.table.items():
-            for y,f in x_friends.items():
-                x_friends[y] = math.log(total_pairs * f/(word_freq_in_pairs[x]*word_freq_in_pairs[y]))
+        total_pairs_freq_sum = self.table.sum()
+        print('Total pairs sum: {}'.format(total_pairs_freq_sum))
+
+        #nonzero_cols = self.table.nonzero[2]
+        #rows_sum = self.table.sum(1) # n x 1 vector with sums across rows
+        word_freq_in_pairs = self.table.sum(0) # 1 x n vector with sums across columns
+
+        for x_index, y_index in self.table.keys():   
+            # pair = (x_index, y_index)
+            self.table[x_index, y_index] = math.log(
+                total_pairs_freq_sum * self.table[x_index, y_index] / 
+                (word_freq_in_pairs[0,x_index] * word_freq_in_pairs[0,y_index])
+            )
 
     def get_association_score(self, w1, w2):
-        if w1 not in self.table:
-            return None
-        sub_table = self.table.get(w1)    
-        return sub_table.get(w2, None)
+        i1 = self.get_word_index(w1)
+        i2 = self.get_word_index(w2)
+        if i1 is None or i2 is None:
+            return self.get_min_association_score()
+        return self.table[i1,i2]      
 
     def get_min_association_score(self):    
-        return min(score for sub_table in self.table.values() for score in sub_table.values())
+        return min(self.table.values())
 
     def get_max_association_score(matrix):    
-        return max(score for sub_table in self.table.values() for score in sub_table.values())
+        return max(self.table.values())
 
     def get_union_intersection(self, clues):
-        union = None
-        intersection = None
-        word_rows = []
-        for w in clues:
-            if w in self.table.keys():
-                row = self.table[w]
-                associated_words = row.keys()
-                word_rows.append(row)
-                if union is None:
-                    union = set(associated_words)
-                    intersection = set(associated_words)
-                else:
-                    union = union.union(associated_words)
-                    intersection = intersection.intersection(associated_words)
+        union_idx = None
+        intersection_idx = None
         for c in clues:
-            if c in union:
-                union.remove(c)
-            if c in intersection:
-                intersection.remove(c)
-        '''
-        if debug:
-            print('{}/{} clues found in structure'.format(len(word_rows),len(clues)))
-            print('Union: {}'.format(union))
-            print('Intersection: {}'.format(intersection))    
-        '''
-        return union, intersection
+            i = self.get_word_index(c)
+            if i is None:
+                continue
+            non_zero_in_row = self.table.getrow(i).nonzero() # (array with x-values, array with y-values)
+            associated_word_indexes = non_zero_in_row[1]
+            if len(associated_word_indexes)==0:
+                continue            
+            if union_idx is None:
+                union_idx = set(associated_word_indexes)
+                intersection_idx = set(associated_word_indexes)
+            else:
+                union_idx = union_idx.union(associated_word_indexes)
+                intersection_idx = intersection_idx.intersection(associated_word_indexes)        
+        union_lex = set([self.indexes_lex[i] for i in union_idx])
+        intersection_lex = set([self.indexes_lex[i] for i in intersection_idx])
+        for c in clues:
+            if c in union_lex:
+                union_lex.remove(c)
+            if c in intersection_lex:
+                intersection_lex.remove(c)
+        return union_lex, intersection_lex
 
 
-    def printAssociationMatrix(matrix_file_in, output_file):
-        matrix = loadObjFromPklFile(matrix_file_in)
-        with open(output_file, 'w') as f_out:        
-            for w1,d in matrix.items():
-                f_out.write('{}\n'.format(w1))
-                for w2, f in d.items():
-                    f_out.write('\t{} ({})\n'.format(w2, f))
+ 

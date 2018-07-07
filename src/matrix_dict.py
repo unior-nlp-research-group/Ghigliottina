@@ -7,8 +7,9 @@ from matrix_base import Matrix_Base
 
 class Matrix_Dict(Matrix_Base):
     
-    def __init__(self, lex=None):
+    def __init__(self, lex=None): #, solution_lex=None
         super().__init__(lex) # initialize lex
+        #this.symmetric = lex == solution_lex
         if lex:
             self.table = defaultdict(lambda: defaultdict(int))
 
@@ -28,13 +29,13 @@ class Matrix_Dict(Matrix_Base):
     def increase_weight(self, w1, w2, weight):
         self.table[w1][w2] += weight        
 
-    def compute_association_scores(self, simmetric=True):
+    def compute_association_scores(self, symmetric=True):
         print("Computing association scores")
-        # word_prob = {w:sum(self.table[w].values())/total_pairs for w in self.table.keys()}
+        # word_prob = {w:sum(self.table[w].values())/total_pairs_freq_sum for w in self.table.keys()}
         # pointwise mutual information f(A,B) / (f(A)·f(B))  //leaving out proportional factor sum
-        total_pairs = sum([sum(d.values()) for d in self.table.values()])/2
-        print('Total pairs: {}'.format(total_pairs))
-        if simmetric:
+        total_pairs_freq_sum = sum([sum(d.values()) for d in self.table.values()])/2
+        print('Total pairs freq sum: {}'.format(total_pairs_freq_sum))
+        if symmetric:
             word_freq_in_pairs = {w:sum(self.table[w].values()) for w in self.table.keys()}                        
         else:
             word_freq_in_pairs = defaultdict(int)
@@ -47,7 +48,7 @@ class Matrix_Dict(Matrix_Base):
                         word_freq_in_pairs[w] += f
         for x,x_friends in self.table.items():
             for y,f in x_friends.items():
-                x_friends[y] = math.log(total_pairs * f/(word_freq_in_pairs[x]*word_freq_in_pairs[y]))
+                x_friends[y] = math.log(total_pairs_freq_sum * f/(word_freq_in_pairs[x]*word_freq_in_pairs[y]))
 
     def get_association_score(self, w1, w2):
         if w1 not in self.table:

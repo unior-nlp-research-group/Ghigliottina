@@ -12,7 +12,7 @@ import patterns_extraction
 ## MODEL 04 PAISA + DE MAURO POLIREMATICHE small lex
 ######################################
 
-OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_04_paisa_de_mauro_poli_small_lex/"
+OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_04_paisa_de_mauro_poli_small_lex_dict/"
 
 LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq.txt"
 LEX_INDEX_FILE = OUTPUT_DIR + "lex_index.pkl"
@@ -21,13 +21,6 @@ COVERAGE_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_coverage.txt"
 EVAL_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_eval.txt"
 
 DE_MAURO_WEIGHT = 50
-
-def addBigramFromPolirematicheInMatrix(matrix, weight, solution_lexicon=None):
-    with open(corpora.POLIREMATICHE_SORTED_FILE, 'r') as f_in:
-        for line in f_in:
-            words = line.split()
-            if len(words)==2:
-                matrix.increase_association_score(words[0], words[1], weight, solution_lexicon)
 
 def build_and_eval():
     utility.make_dir(OUTPUT_DIR)
@@ -48,8 +41,8 @@ def build_and_eval():
     matrix = matrix_dict.Matrix_Dict(lex=lex)
     matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO, solution_lexicon=solution_lexicon)
     matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO, weight=DE_MAURO_WEIGHT,solution_lexicon=solution_lexicon)
-    addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT, solution_lexicon=solution_lexicon)
-    matrix.compute_association_scores(simmetric=False)
+    corpora.addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT, solution_lexicon=solution_lexicon)
+    matrix.compute_association_scores(symmetric=False)
     matrix.write_matrix_to_file(MATRIX_FILE)
     print('Eval')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
@@ -68,7 +61,7 @@ def solver():
     scorer.solver(matrix)
 
 if __name__=='__main__':  
-    #build_and_eval()
+    build_and_eval()
     #solver()
-    eval()
+    #eval()
     
