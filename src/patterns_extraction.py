@@ -59,7 +59,7 @@ def replacePrepDetCatWithPrepArt(tokens):
         tokens[i] = PREP_ART_CAT
     return found_indexes
 
-def replaceWordCats(tokens, lex=None, inplace=True):
+def replaceWordCats(tokens, lex_set=None, inplace=True):
     tokens_cat = tokens if inplace else list(tokens)
     for i,w in enumerate(tokens_cat):
         if not VALID_WORD_PATTERN.match(w):
@@ -67,15 +67,15 @@ def replaceWordCats(tokens, lex=None, inplace=True):
     for i,w in enumerate(tokens_cat):
         if w in ALL_SET_WORDS:
             tokens_cat[i] = substituteWordsWithWordClass(w)    
-        elif lex and w not in lex:
+        elif lex_set and w not in lex_set:
             tokens_cat[i] = UNK_WORD_CAT    
     return tokens_cat
 
-def tokenizeLineReplaceWordCats(line, lex=None):        
+def tokenizeLineReplaceWordCats(line, lex_set=None):        
     tokens = tokenizeLine(line)
     if tokens == None:
         return None
-    tokens_cat = replaceWordCats(tokens, lex)
+    tokens_cat = replaceWordCats(tokens, lex_set)
     replacePrepDetCatWithPrepArt(tokens_cat)
     return tokens_cat
 
@@ -94,12 +94,13 @@ A prep B
 A conj B
 A prepart B
 A prep det B
-# ... (A è det B) -- do we want to add this?
+# ... (A è indef B) -- do we want to add this?
+# ... VERB come indef B
 '''
-def addPatternsFromLine(line, matrix, lex, weight=1, solution_lexicon = None, debug=False):        
+def addPatternsFromLine(line, matrix, lex_set, weight=1, debug=False):        
     if debug:
         print(line.strip())
-    tokens = tokenizeLineReplaceWordCats(line, lex)
+    tokens = tokenizeLineReplaceWordCats(line, lex_set)
     if tokens is None:
         return 0
     if debug:
@@ -111,17 +112,17 @@ def addPatternsFromLine(line, matrix, lex, weight=1, solution_lexicon = None, de
     for w in bigrams:
         # both tokens need to be valid words in dictionary
         if w[0] not in ALL_CATS and w[1] not in ALL_CATS: 
-            matrix.increase_association_score(w[0], w[1], weight, solution_lexicon)
+            matrix.increase_association_score(w[0], w[1], weight)
             patterns_count += 1
             if debug:
                 print("\t{} - {}".format(w[0],w[1]))
     for w in trigrams:
         # first and last tokens need to be valid words in dictionary while middle tokens needs to be a cat (det, prep, ...)
         if w[0] not in ALL_CATS and w[1] in ALL_PATTERN_CATS and w[2] not in ALL_CATS:
-            matrix.increase_association_score(w[0], w[2], weight, solution_lexicon)
+            matrix.increase_association_score(w[0], w[2], weight)
             patterns_count += 1
             if debug:
-                print("\t{} - {}".format(t[0],t[2]))            
+                print("\t{} - {}".format(w[0],w[2]))            
     return patterns_count
 
 
@@ -129,7 +130,7 @@ def getLinesConfirmingSolution(clues, solution):
     clues = [x.lower() for x in clues]
     solution = solution.lower()
     lexicon_freq = loadLexFreqFromFile()
-    lex = lexicon_freq.keys()
+    lex_set = lexicon_freq.keys()
     result = defaultdict(list)
     with gzip.open(PAISA_ROW_INPUT, 'rt') as f_in:        
         line_count = 0        
@@ -140,7 +141,7 @@ def getLinesConfirmingSolution(clues, solution):
             tokens = tokenizeLine(line)
             if tokens == None:
                 continue
-            tokens_cat = replaceWordCats(tokens, lex, inplace=False)            
+            tokens_cat = replaceWordCats(tokens, lex_set, inplace=False)            
             prep_det_indexes = replacePrepDetCatWithPrepArt(tokens_cat)
             for i in reversed(prep_det_indexes):
                 tokens[i] = '{} {}'.format(tokens[i], tokens[i+1])

@@ -2,7 +2,14 @@
 
 import gzip
 
-GAME_SET_100_FILE = "/Users/fedja/scratch/Ghigliottina/annotated_game_words.txt"
+DATA_DIR = "/Users/fedja/GDrive/Joint Projects/Ghigliottina/data/"
+GAME_SET_100_FILE = DATA_DIR + "game_set_100.tsv"
+NLP4FUN_DEV_XML_v1_FILE = DATA_DIR + "nlp4fun_train_v1.xml"
+NLP4FUN_DEV_TSV_v1_FILE = DATA_DIR + "nlp4fun_train_v1.tsv"
+
+NLP4FUN_DEV_XML_v2_FILE = DATA_DIR + "nlp4fun_train_v2.xml"
+NLP4FUN_DEV_TSV_v2_tv_FILE = DATA_DIR + "nlp4fun_train_v2_tv.tsv"
+NLP4FUN_DEV_TSV_v2_bg_FILE = DATA_DIR + "nlp4fun_train_v1_bg.tsv"
 
 # CORPORA
 
@@ -52,7 +59,7 @@ PROVERBI_INFO = {
     'exlude_pattern': False
 }
 
-PAISA_FREQ_STAT_PATH = '/Users/fedja/scratch/CORPORA/PAISA/freq_stats/'
+PAISA_FREQ_STAT_PATH = '/Users/fedja/scratch/CORPORA/PAISA/lex_freq/'
 PAISA_LEX_FREQ_FILE = PAISA_FREQ_STAT_PATH + 'lex_freq.txt'
 PAISA_SOSTANTIVI_FREQ_FILE = PAISA_FREQ_STAT_PATH + 'sostantivi_freq.txt'
 PAISA_AGGETTIVI_FREQ_FILE = PAISA_FREQ_STAT_PATH + 'aggettivi_freq.txt'
@@ -100,6 +107,10 @@ WIKI_IT_TITLES_PROCESSED = '/Users/fedja/scratch/CORPORA/Wiki_IT/itwiki-latest-a
 WIKI_DATA_PEOPLE_FILE = "/Users/fedja/scratch/CORPORA/WikiData/people_it.json" # 7984 (7361 unique if splitting names)
 # [{'human':'url', 'name': 'first middle last'}, {...}]
 
+####################
+# GENERAL FUNCTIONS
+####################
+
 def extract_lines(corpus_info, report_every=100000):
     import re    
     name = corpus_info['name']
@@ -137,34 +148,38 @@ def countWordsInCompressedFile(file_in, encoding):
             words += len(l.split())
     return words
 
-def addBigramFromPolirematicheInMatrix(matrix, weight=1, solution_lexicon=None):    
+def addBigramFromPolirematicheInMatrix(matrix, weight=1):    
     import patterns_extraction
     with open(POLIREMATICHE_SORTED_FILE, 'r') as f_in:
         for line in f_in:
             words = patterns_extraction.tokenizeLine(line)
             if len(words)==2:
-                matrix.increase_association_score(words[0], words[1], weight, solution_lexicon)
+                matrix.increase_association_score(words[0], words[1], weight)
+
+def addBigramFromCompunds(matrix, lex, min_len, weight=1):    
+    compounds_dict = extractCompundsInLexicon(lex, min_len)
+    for w1 in compounds_dict:
+        for w2 in compounds_dict[w1]:
+            matrix.increase_association_score(w1, w2, weight)                
 
 
-###################
-# LOCAL FUNCTIONS
-###################
+####################
+# EXTRACT COMOUNDS
+####################
 
-def analizeFreq(corpus_info):
-    import patterns_extraction    
+def extractCompundsInLexicon(lexicon_set, min_len):
     from collections import defaultdict
-    lines_extractor = corpora.extract_lines(corpus_info)
-    lex_freq = defaultdict(int)
-    for line in lines_extractor:
-        tokens = patterns_extraction.tokenizeLineReplaceWordCats(line)
-        for t in tokens:
-            lex_freq[t] += 1
-    for CAT in patterns_extraction.ALL_CATS:
-        if CAT in lex_freq:
-            del lex_freq[CAT]  
-    with open(PAISA_LEX_FREQ_FILE, 'w') as f_out:
-        for w,f in sorted(lex_freq.items(), key=lambda x: -x[1]):
-            f_out.write('{}\t{}\n'.format(f,w))
+    dict = defaultdict(list)
+    compounds_dict = defaultdict(list) # radio -> [attività attivo], contro -> figura
+    for w in lexicon_set:
+        for i in range(1, len(w)):
+            first, second = w[:i], w[i:]
+            if min_len and ( len(first)<min_len or len(second)<min_len):
+                continue
+            if first in lexicon_set and second in lexicon_set:
+                compounds_dict[first].append(second)
+    return compounds_dict     
+    # json.dump(compounds_dict, open('/Users/fedja/scratch/CORPORA/DE_MAURO/compunds.txt','w'), indent=3, ensure_ascii=False)
 
 ####################
 # PAISA FUNCTIONS
@@ -187,6 +202,15 @@ def buildPaisaPosLexFile(pos):
     print('Read tokens: {}'.format(token_count))
     return pos_lex_freq
 
+def getLemmasInflectionsDict():
+    from collections import defaultdict
+    dict = defaultdict(list)
+    with open(LAEMMAS_INFLECIONS_FILE) as f_in:
+        for line in f_in:
+            lemma, inflection = [x.strip() for x in line.split('\t')]
+            dict[lemma].append(inflection)
+    return dict
+
 def buildPaisaSostantiviFile():
     import lexicon
     sost_lex_freq = buildPaisaPosLexFile('S')
@@ -194,8 +218,49 @@ def buildPaisaSostantiviFile():
 
 def buildPaisaAggettiviFile():
     import lexicon
-    sost_lex_freq = buildPaisaPosLexFile('A')
-    lexicon.printLexFreqToFile(sost_lex_freq, PAISA_AGGETTIVI_FREQ_FILE)    
+    agg_lex_freq = buildPaisaPosLexFile('A')
+    lexicon.printLexFreqToFile(agg_lex_freq, PAISA_AGGETTIVI_FREQ_FILE)    
+
+def getAggettiviSetFromPaisa(min_freq, inflected):    
+    import lexicon
+    agg_lex_freq = lexicon.loadLexFreqFromFile(PAISA_AGGETTIVI_FREQ_FILE)
+    agg_lex_min_freq = [w for w,f in agg_lex_freq.items() if f>=min_freq]
+    agg_lex_set = set(agg_lex_min_freq)
+    if inflected:
+        lemma_inflections_dict = getLemmasInflectionsDict()
+        for w in agg_lex_min_freq:
+            if w in lemma_inflections_dict:
+                agg_lex_set.update(lemma_inflections_dict[w])
+    return agg_lex_set
+
+def getSostantiviSetFromPaisa(min_freq, inflected):    
+    import lexicon
+    sostantivi_lex_freq = lexicon.loadLexFreqFromFile(PAISA_SOSTANTIVI_FREQ_FILE)
+    sostantivi_lex_min_freq = [w for w,f in sostantivi_lex_freq.items() if f>=min_freq]
+    sostantivi_lex_set = set(sostantivi_lex_min_freq)
+    if inflected:
+        lemma_inflections_dict = getLemmasInflectionsDict()
+        for w in sostantivi_lex_min_freq:
+            if w in lemma_inflections_dict:
+                sostantivi_lex_set.update(lemma_inflections_dict[w])
+    return sostantivi_lex_set
+
+
+def analizeFreq(corpus_info):
+    import patterns_extraction    
+    from collections import defaultdict
+    lines_extractor = corpora.extract_lines(corpus_info)
+    lex_freq = defaultdict(int)
+    for line in lines_extractor:
+        tokens = patterns_extraction.tokenizeLineReplaceWordCats(line)
+        for t in tokens:
+            lex_freq[t] += 1
+    for CAT in patterns_extraction.ALL_CATS:
+        if CAT in lex_freq:
+            del lex_freq[CAT]  
+    with open(PAISA_LEX_FREQ_FILE, 'w') as f_out:
+        for w,f in sorted(lex_freq.items(), key=lambda x: -x[1]):
+            f_out.write('{}\t{}\n'.format(f,w))
 
 def builDizAugmentedPaisa(lexPosFreqFile, lexPosBaseFile, min_freq, output_file):    
     import lexicon
@@ -227,20 +292,12 @@ def builDizAggettiviAugmentedPaisa():
     lexPosBaseFile = DIZIONARIO_BASE_AGGETTIVI_FILE
     builDizAugmentedPaisa(lexPosFreqFile, lexPosBaseFile, min_freq, DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_FILE)
 
-############
 
-def getLemmasInflectionDict():
-    from collections import defaultdict
-    dict = defaultdict(list)
-    with open(LAEMMAS_INFLECIONS_FILE) as f_in:
-        for line in f_in:
-            lemma, inflection = line.split('\t')
-            dict[lemma].append(inflection)
-    return dict
+############
 
 def buildDizSostantiviAugmentedPaisaInflected():
     import lexicon     
-    lemma_inflections_dict = getLemmasInflectionDict()
+    lemma_inflections_dict = getLemmasInflectionsDict()
     diz_base_inflected = [
         [DIZIONARIO_SOSTANTIVI_AUGMENTED_PAISA_FILE, DIZIONARIO_SOSTANTIVI_AUGMENTED_PAISA_INFLECTED_FILE],
         [DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_FILE, DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_INFLECTED_FILE]
@@ -272,15 +329,34 @@ def getWikiDataPeople(split_names):
                 people_name_set.add(item['name'])
         return people_name_set
 
-def extractCompundsInLexicon(lexicon_set):
-    from collections import defaultdict
-    dict = defaultdict(list)
-    compounds_dict = defaultdict(list) # radio -> [attività attivo], contro -> figura
-    for w in lexicon_set:
-        for i in range(1, len(w)):
-            first, second = w[:i], w[i:]
-            if first in lexicon_set and second in lexicon_set:
-                compounds_dict[first].append(second)
-    return compounds_dict     
-    # json.dump(compounds_dict, open('/Users/fedja/scratch/CORPORA/DE_MAURO/compunds.txt','w'), indent=3, ensure_ascii=False)
-    
+def convertDataSetXmlToTsv():
+    games = {
+        'TV': [],
+        'boardgame': []
+    }
+    current_game = []
+    clue_tag_open, clue_tag_close = '<clue>', '</clue>'
+    solution_tag_open, solution_tag_close = '<solution>', '</solution>'
+    type_tag_open, type_tag_close = '<type>', '</type>'
+    with open(NLP4FUN_DEV_XML_v2_FILE) as f_in:
+        for line in f_in:
+            if clue_tag_open in line:
+                line = line.replace(clue_tag_close, clue_tag_open)
+                clue = line.split(clue_tag_open)[1]
+                current_game.append(clue)
+            elif solution_tag_open in line:
+                line = line.replace(solution_tag_close, solution_tag_open)
+                solution = line.split(solution_tag_open)[1]
+                current_game.append(solution)
+            elif type_tag_open in line:
+                line = line.replace(type_tag_close, type_tag_open)
+                type = line.split(type_tag_open)[1]
+                games[type].append(current_game)
+                current_game = []
+
+    with open(NLP4FUN_DEV_TSV_v2_tv_FILE, 'w') as f_out:
+        for g in games['TV']:
+            f_out.write('\t'.join(g) + '\n')
+    with open(NLP4FUN_DEV_TSV_v2_bg_FILE, 'w') as f_out:
+        for g in games['boardgame']:
+            f_out.write('\t'.join(g) + '\n')

@@ -25,20 +25,34 @@ EVAL_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_eval.txt"
 
 def build_and_eval():    
     utility.make_dir(OUTPUT_DIR)
-    print('Building lexicon')
-    lex = lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE)
-    lexicon_freq = {w:1 for w in lex}
-    print('Lex size: {}'.format(len(lex)))
-    lexicon.printLexFreqToFile(lexicon_freq, LEX_FREQ_FILE)
-    print('Computing coverage')
-    scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
-    print('Building association matrix')
-    matrix = Matrix(lex=lex)
+    print('\nBuilding lexicon')
+    
+    lex_set = lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE)
+    lex_solution_set = lex_set
+
+    '''
+    poli_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE))
+    sost_lexicon = list(corpora.getSostantiviSetFromPaisa(min_freq=100, inflected=True))
+    print('\nSize of sostantivi lex: {}'.format(len(sost_lexicon)))
+    agg_lexicon = list(corpora.getAggettiviSetFromPaisa(min_freq=100, inflected=True))
+    print('\nSize of agg lex: {}'.format(len(agg_lexicon)))
+    lex_set = set(poli_lexicon + sost_lexicon + agg_lexicon)
+    lex_solution_set =  set(sost_lexicon+agg_lexicon)
+    #lex_solution_set = lex_set
+    '''
+
+    print('\nComputing lex coverage')
+    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
+
+    print('\nBuilding association matrix')
+    matrix = Matrix(lex_set, lex_solution_set)
     matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO)
-    corpora.addBigramFromPolirematicheInMatrix(matrix)
+    corpora.addBigramFromPolirematicheInMatrix(matrix, weight=1)
+    #corpora.addBigramFromCompunds(matrix, lex_set, min_len=4, weight=10)
     matrix.compute_association_scores()
     matrix.write_matrix_to_file(MATRIX_FILE)
-    print('Eval')
+    
+    print('\nEval')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
 
 def eval():    

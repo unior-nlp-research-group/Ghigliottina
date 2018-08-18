@@ -2,47 +2,45 @@
 
 import matrix_dict
 from collections import defaultdict
+from utility import print_write
 
 ###################
 ## COVERAGE
 ###################
 
-def computeCoverageOfGameWordLex(lexicon_freq, game_set_file, output_file, solution_lex_freq=None):
-    if solution_lex_freq == None:
-        solution_lex_freq = lexicon_freq
+def computeCoverageOfGameWordLex(lex_set, lex_solution_set, game_set_file, output_file):
     game_set = read_game_set_tab(game_set_file)
-    game_words_lex = set()
-    solution_game_words = set()
+    game_words_lex = set() # clues + solution
+    solution_game_words = set() # only solutions
     for game_words in game_set:
         solution_game_words.add(game_words[-1])
-        for w in game_words:
-            game_words_lex.add(w)            
-    #print(game_words_lex)
-    covered, not_covered = {}, set()
-    solution_covered, solution_not_covered = {}, set()
+        game_words_lex.update(game_words)                        
+    game_covered, game_not_covered = set(), set()
+    solution_covered, solution_not_covered = set(), set()
     for w in game_words_lex: 
-        if w in lexicon_freq:
-            covered[w] = lexicon_freq[w]
+        if w in lex_set:
+            game_covered.add(w)
         else:
-            not_covered.add(w)
+            game_not_covered.add(w)
     for s in solution_game_words: 
-        if s in solution_lex_freq:
-            solution_covered[s] = solution_lex_freq[s]
+        if s in lex_solution_set:
+            solution_covered.add(s)
         else:
             solution_not_covered.add(s)
     with open(output_file, 'w') as f_out:
+        ## lex stats
+        print_write(f_out, 'Lex size: {}'.format(len(lex_set)))
+        print_write(f_out, 'Solution Lex size: {}'.format(len(lex_solution_set)))
         ## solution coverage
-        f_out.write('SOLUTION WORDS COVERED {}/{}\n-------------\n'.format(len(solution_covered), len(solution_game_words)))
-        solution_sorted_covered = sorted(solution_covered.items(), key=lambda x: x[1])
-        f_out.write(', '.join(["{} {}".format(f,w) for w,f in solution_sorted_covered]))
-        f_out.write('\n\nSOLUTION WORDS NOT COVERED {}/{}\n-------------\n'.format(len(solution_not_covered), len(solution_game_words)))
-        f_out.writelines(', '.join([w for w in sorted(solution_not_covered)]))
+        print_write(f_out, '\nSOLUTION WORDS COVERED {}/{}\n-------------'.format(len(solution_covered), len(solution_game_words)))
+        f_out.write(', '.join(sorted(solution_covered)))
+        print_write(f_out, '\n\nSOLUTION WORDS NOT COVERED {}/{}\n-------------'.format(len(solution_not_covered), len(solution_game_words)))
+        print_write(f_out, ', '.join(sorted(solution_not_covered)))
         ## all words coverage
-        f_out.write('\n\nALL WORDS COVERAGE {}/{}\n-------------\n'.format(len(covered), len(game_words_lex)))
-        sorted_covered = sorted(covered.items(), key=lambda x: x[1])
-        f_out.write(', '.join(["{} {}".format(f,w) for w,f in sorted_covered]))
-        f_out.write('\n\nALL WORDS NOT COVERED {}/{}\n-------------\n'.format(len(not_covered), len(game_words_lex)))
-        f_out.writelines(', '.join([w for w in sorted(not_covered)]))
+        print_write(f_out, '\n\nALL GAME WORDS COVERAGE {}/{}\n-------------'.format(len(game_covered), len(game_words_lex)))
+        f_out.write(', '.join(sorted(game_covered)))
+        print_write(f_out, '\n\nALL GAME WORDS NOT COVERED {}/{}\n-------------'.format(len(game_not_covered), len(game_words_lex)))
+        print_write(f_out, ', '.join(sorted(game_not_covered)))
 
 ###################
 ## SOLVING
@@ -142,7 +140,7 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
         score_sum_str = '{0:.1f}'.format(sum(scores))
         report_fields = clues + [solution, abs_rank, group_rank, group, rank_in_group, spaced_clues_matched_info, spaced_scores, score_sum_str]
         eval_report = '\t'.join([str(x) for x in report_fields])
-        print(eval_report)
+        #print(eval_report)
         eval_details.append(eval_report)
         if abs_rank<=100:
             MRR_score_abs_rank += 1./abs_rank
@@ -171,9 +169,9 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
     print('\n'.join(summary))
     if output_file:
         with open(output_file, 'w') as f_out:
-            f_out.write('\n'.join(summary))
-            f_out.write('\n\nPosition Details:\n\n')
-            f_out.write('\n'.join(eval_details))
+            print_write(f_out, '\n'.join(summary))
+            print_write(f_out, '\n\nPosition Details:\n\n')
+            print_write(f_out, '\n'.join(eval_details))
 
 def solver(matrix):
     unfound_pair_score = matrix.get_min_association_score()

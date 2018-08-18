@@ -25,19 +25,19 @@ DE_MAURO_WEIGHT = 50
 def build_and_eval():
     utility.make_dir(OUTPUT_DIR)
     print('Building lexicon')
-    lex = lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE)
-    lexicon_freq = {w:1 for w in lex}   
-    #solution_lexicon =  lexicon.loadLexiconFromFile(corpora.DIZIONARIO_BASE_SOSTANTIVI_FILE)
-    print('Lex size: {}'.format(len(lex)))
+    lex_set = lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE)
+    lexicon_freq = {w:1 for w in lex_set}   
+    #lex_solution_set =  lexicon.loadLexiconFromFile(corpora.DIZIONARIO_BASE_SOSTANTIVI_FILE)
+    print('Lex size: {}'.format(len(lex_set)))
     lexicon.printLexFreqToFile(lexicon_freq, LEX_FREQ_FILE)
     print('Computing coverage')
     scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
     print('Building association matrix')
-    matrix = matrix_dict.Matrix_Dict(lex=lex)
-    matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO) #solution_lexicon
-    matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO, weight=DE_MAURO_WEIGHT) #solution_lexicon
-    corpora.addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT) #solution_lexicon
-    matrix.compute_association_scores() # symmetric=False
+    matrix = matrix_dict.Matrix_Dict(lex_set=lex_set) # lex_solution_set
+    matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO)
+    matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO, weight=DE_MAURO_WEIGHT)
+    corpora.addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT)
+    matrix.compute_association_scores()
     matrix.write_matrix_to_file(MATRIX_FILE)
     print('Eval')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)

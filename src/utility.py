@@ -25,3 +25,7 @@ def dumpObjToPklFile(obj, pkl_file):
 
 def ngrams(input, n):
     return [input[i:i+n] for i in range(len(input)-n+1)]      
+
+def print_write(f_out, string):
+    print(string)
+    f_out.write(string)

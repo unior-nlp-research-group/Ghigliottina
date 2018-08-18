@@ -15,44 +15,57 @@ import patterns_extraction
 OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_05_all_corpora_small_lex_dict/"
 
 LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq.txt"
+SOLUTION_LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq_solution.txt"
 LEX_INDEX_FILE = OUTPUT_DIR + "lex_index.pkl"
 MATRIX_FILE = OUTPUT_DIR + "matrix.pkl"
 COVERAGE_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_coverage.txt"
 EVAL_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_eval.txt"
+EVAL_WORD_NLP4FUN_DEV_TV_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_TV_eval.txt"
+EVAL_WORD_NLP4FUN_DEV_BG_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_BG_eval.txt"
+
 
 DE_MAURO_WEIGHT = 200
 PROVERBI_WEIGHT = 100
 WIKI_IT_WEIGHT = 50
+COMPOUNDS_WEIGHT = 50
 
 def build_and_eval():
     utility.make_dir(OUTPUT_DIR)
+
     print('Building lexicon')
+
     poli_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE))
     sost_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZIONARIO_SOSTANTIVI_AUGMENTED_PAISA_FILE))
     agg_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_FILE))
-    #sost_lex_freq_paisa = lexicon.loadLexFreqFromFile(corpora.PAISA_SOSTANTIVI_FREQ_FILE)
-    #agg_lex_freq_paisa = lexicon.loadLexFreqFromFile(corpora.PAISA_AGGETTIVI_FREQ_FILE)
-    #sost_lexicon = list(w for w,f in sost_lex_freq_paisa.items() if f>100)
-    #agg_lexicon = list(w for w,f in agg_lex_freq_paisa.items() if f>100)
-    lex = set(poli_lexicon+sost_lexicon+agg_lexicon)
-    lexicon_freq = {w:1 for w in lex}   
-    solution_lexicon =  set(sost_lexicon+agg_lexicon)
-    print('Lex size: {}'.format(len(lex)))
-    print('Solution Lex size: {}'.format(len(solution_lexicon)))
-    lexicon.printLexFreqToFile(lexicon_freq, LEX_FREQ_FILE)
-    solution_lexicon_freq = {w:1 for w in solution_lexicon}   
-    print('Computing coverage of solution lexicon')
-    scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE, solution_lexicon_freq)
+    lex_set = set(poli_lexicon+sost_lexicon+agg_lexicon)
+    lex_solution_set =  set(sost_lexicon+agg_lexicon)
+
+    '''
+    poli_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE))
+    sost_lexicon = list(corpora.getSostantiviSetFromPaisa(min_freq=1000, inflected=True))
+    print('\nSize of sostantivi lex: {}'.format(len(sost_lexicon)))
+    agg_lexicon = list(corpora.getAggettiviSetFromPaisa(min_freq=1000, inflected=True))
+    print('\nSize of agg lex: {}'.format(len(agg_lexicon)))
+    lex_set = set(poli_lexicon + sost_lexicon + agg_lexicon)
+    '''
+
+    lexicon.printLexiconToFile(lex_set, LEX_FREQ_FILE)
+    lexicon.printLexiconToFile(lex_solution_set, SOLUTION_LEX_FREQ_FILE)
+
+    print('Computing lex coverage')
+    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
+    
     print('Building association matrix')
-    matrix = matrix_dict.Matrix_Dict(lex=lex)
-    matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO, solution_lexicon=solution_lexicon)
-    matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO, weight=DE_MAURO_WEIGHT,solution_lexicon=solution_lexicon)
-    matrix.add_patterns_from_corpus(corpora.PROVERBI_INFO, weight=PROVERBI_WEIGHT,solution_lexicon=solution_lexicon)    
-    matrix.add_patterns_from_corpus(corpora.ITWAC_RAW_INFO, weight=1,solution_lexicon=solution_lexicon)
-    matrix.add_patterns_from_corpus(corpora.WIKI_IT_TITLES_INFO, weight=WIKI_IT_WEIGHT,solution_lexicon=solution_lexicon)    
-    #matrix.add_patterns_from_corpus(corpora.WIKI_IT_TEXT_INFO, weight=1,solution_lexicon=solution_lexicon)        
-    corpora.addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT, solution_lexicon=solution_lexicon)    
-    matrix.compute_association_scores(symmetric=False)
+    matrix = matrix_dict.Matrix_Dict(lex_set, lex_solution_set)
+    matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO)
+    matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO, weight=DE_MAURO_WEIGHT)
+    matrix.add_patterns_from_corpus(corpora.PROVERBI_INFO, weight=PROVERBI_WEIGHT)    
+    matrix.add_patterns_from_corpus(corpora.ITWAC_RAW_INFO, weight=1)
+    matrix.add_patterns_from_corpus(corpora.WIKI_IT_TITLES_INFO, weight=WIKI_IT_WEIGHT)        
+    #matrix.add_patterns_from_corpus(corpora.WIKI_IT_TEXT_INFO, weight=1)        
+    corpora.addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT)    
+    corpora.addBigramFromCompunds(matrix, lex_set, min_len=4, weight=COMPOUNDS_WEIGHT)
+    matrix.compute_association_scores()
     matrix.write_matrix_to_file(MATRIX_FILE)
     print('Eval')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
@@ -62,7 +75,10 @@ def eval():
     matrix = matrix_dict.Matrix_Dict()
     matrix.read_matrix_from_file(MATRIX_FILE)
     print('Evaluating')
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
+    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_tv_FILE, EVAL_WORD_NLP4FUN_DEV_TV_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_bg_FILE, EVAL_WORD_NLP4FUN_DEV_BG_FILE)
+
 
 def solver():
     print('Loading association matrix')
@@ -71,7 +87,7 @@ def solver():
     scorer.solver(matrix)
 
 if __name__=='__main__':  
-    build_and_eval()
+    #build_and_eval()
     #solver()
-    #eval()
+    eval()
     

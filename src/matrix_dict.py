@@ -7,10 +7,9 @@ from matrix_base import Matrix_Base
 
 class Matrix_Dict(Matrix_Base):
     
-    def __init__(self, lex=None): #, solution_lex=None
-        super().__init__(lex) # initialize lex
-        #this.symmetric = lex == solution_lex
-        if lex:
+    def __init__(self, lex_set=None, lex_solution_set=None):
+        super().__init__(lex_set, lex_solution_set) # initialize lex_set and lex_solution_set
+        if lex_set:
             self.table = defaultdict(lambda: defaultdict(int))
 
     def read_matrix_from_file(self, file_input):
@@ -23,19 +22,19 @@ class Matrix_Dict(Matrix_Base):
     ##############################
     # Defined in base class
     ##############################
-    # def add_patterns_from_corpus(self, corpus_info, weight=1, solution_lexicon=None)
-    # def increase_association_score(self, w1, w2, weight=1, solution_lexicon=None)
+    # def add_patterns_from_corpus(self, corpus_info, weight=1)
+    # def increase_association_score(self, w1, w2, weight=1)
 
     def increase_weight(self, w1, w2, weight):
         self.table[w1][w2] += weight        
 
-    def compute_association_scores(self, symmetric=True):
+    def compute_association_scores(self):
         print("Computing association scores")
         # word_prob = {w:sum(self.table[w].values())/total_pairs_freq_sum for w in self.table.keys()}
         # pointwise mutual information f(A,B) / (f(A)·f(B))  //leaving out proportional factor sum
         total_pairs_freq_sum = sum([sum(d.values()) for d in self.table.values()])/2
         print('Total pairs freq sum: {}'.format(total_pairs_freq_sum))
-        if symmetric:
+        if self.symmetric:
             word_freq_in_pairs = {w:sum(self.table[w].values()) for w in self.table.keys()}                        
         else:
             word_freq_in_pairs = defaultdict(int)
@@ -77,6 +76,9 @@ class Matrix_Dict(Matrix_Base):
                 else:
                     union = union.union(associated_words)
                     intersection = intersection.intersection(associated_words)
+        if union is None:
+            union = set()
+            intersection = set()
         for c in clues:
             if c in union:
                 union.remove(c)

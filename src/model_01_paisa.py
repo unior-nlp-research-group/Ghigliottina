@@ -35,7 +35,7 @@ def build_and_eval():
     print('Computing coverage')
     scorer.computeCoverageOfGameWordLex(pruned_lexicon_freq, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
     print('Building association matrix')    
-    matrix = matrix_dict.Matrix_Dict(lex=pruned_lexicon_freq.keys())
+    matrix = matrix_dict.Matrix_Dict(lex_set=pruned_lexicon_freq.keys())
     matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO)
     matrix.compute_association_scores()
     matrix.write_matrix_to_file(MATRIX_FILE)

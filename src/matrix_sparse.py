@@ -10,13 +10,13 @@ from scipy.sparse import dok_matrix
 
 class Matrix_Sparse(Matrix_Base):
     
-    def __init__(self, lex=None):
-        super().__init__(lex) # initialize lex
+    def __init__(self, lex_set=None, lex_solution_set=None):
+        super().__init__(lex_set, lex_solution_set) # initialize lex_set and lex_solution_set
         self.lex_indexes = {} # word -> index of word
         self.indexes_lex = {} # index -> word
-        if lex:
-            self.table = dok_matrix((len(lex), len(lex)), dtype=np.float32)
-            for l in lex:
+        if lex_set:
+            self.table = dok_matrix((len(lex_set), len(lex_set)), dtype=np.float32)
+            for l in lex_set:
                 l_index = self.lex_indexes.setdefault(l, len(self.lex_indexes)) 
                 self.indexes_lex[l_index] = l
 
@@ -33,8 +33,8 @@ class Matrix_Sparse(Matrix_Base):
     ##############################
     # Defined in base class
     ##############################
-    # def add_patterns_from_corpus(self, corpus_info, weight=1, solution_lexicon=None)
-    # def increase_association_score(self, w1, w2, weight=1, solution_lexicon=None)
+    # def add_patterns_from_corpus(self, corpus_info, weight=1, lex_solution_set=None)
+    # def increase_association_score(self, w1, w2, weight=1, lex_solution_set=None)
 
     def get_word_index(self, w):
         return self.lex_indexes.get(w, None)
@@ -44,7 +44,7 @@ class Matrix_Sparse(Matrix_Base):
         i2 = self.get_word_index(w2)
         self.table[i1,i2] += weight
 
-    def compute_association_scores(self, symmetric=True):
+    def compute_association_scores(self):
         print("Computing association scores")
         # word_prob = {w:sum(self.table[w].values())/total_pairs for w in self.table.keys()}
         # pointwise mutual information f(A,B) / (f(A)·f(B))  //leaving out proportional factor sum

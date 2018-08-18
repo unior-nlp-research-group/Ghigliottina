@@ -26,10 +26,10 @@ def printLexFreqToFile(lex_freq, lex_file_out):
        for w,f in sorted(lex_freq.items(), key=lambda x: -x[1]):
            f_out.write('{}\t{}\n'.format(f,w))    
 
-def printLexiconToFile(lex, lex_file_out):
-   print("Saving lex to file to {}".formmat(lex_file_out))
+def printLexiconToFile(lex_set, lex_file_out):
+   print("Saving lex to file to {}".format(lex_file_out))
    with open(lex_file_out, 'w') as f_out:    
-       for w in sorted(lex):
+       for w in sorted(lex_set):
            f_out.write('{}\n'.format(w))    
 
 def loadLexFreqFromFile(lex_file_in):
@@ -41,17 +41,17 @@ def loadLexFreqFromFile(lex_file_in):
     return lexicon_freq
 
 def loadLexiconFromFile(inputFile):
-    lex = set()
+    lex_set = set()
     with open(inputFile, 'r') as f_in:
         for word in f_in:  
-            lex.add(word.strip())
-    return lex
+            lex_set.add(word.strip())
+    return lex_set
 
 def buildLexIndex(corpora_dict_list, lex_file_in, lex_index_file_out):
     import patterns_extraction
     print('Building lex index...')
     lexicon_freq = loadLexFreqFromFile(lex_file_in)
-    lex = lexicon_freq.keys()
+    lex_set = lexicon_freq.keys()
     # file_name -> w line_number
     lexicon_index = defaultdict(lambda: defaultdict(list))
     for corpus_file in corpora_dict_list:
@@ -62,7 +62,7 @@ def buildLexIndex(corpora_dict_list, lex_file_in, lex_index_file_out):
                 if tokens is None:
                     continue            
                 for w in tokens:
-                    if w in lex:
+                    if w in lex_set:
                         lexicon_index[corpus_file][w].append(line_count)
                 if line_count % 500000 == 0:
                     print(line_count)     
