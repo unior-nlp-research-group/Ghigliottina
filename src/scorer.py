@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import matrix_dict
 from collections import defaultdict
@@ -48,19 +49,22 @@ def computeCoverageOfGameWordLex(lex_set, lex_solution_set, game_set_file, outpu
 
 def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, nBest=10):
     if debug:
-        print('Input clues: {}'.format(clues))            
-    union, intersection = matrix.get_union_intersection(clues)        
+        print('Input clues: {}'.format(clues)) 
+    clues_words = [w for c in clues for w in c.split()]
+    union, intersection = matrix.get_union_intersection(clues_words)        
     x_table = {}
     for x in union:
         association_scores = []        
-        for w in clues:
-            association_scores.append(matrix.get_association_score(x, w))
-        association_none_replaced = [unfound_pair_score if x==None else x for x in association_scores]
+        for c in clues:
+            cw = c.split()
+            score = sum(matrix.get_association_score(x, w, unfound_pair_score) for w in cw)
+            score = score / len(cw)
+            association_scores.append(score)
         x_table[x] = {
-            'scores': association_none_replaced,
-            'sum': sum(association_none_replaced),
-            'clues_matched_info': ['X' if x!=None else '_' for x in association_scores],
-            'clues_matched_count': sum([1 for x in association_scores if x!=None])            
+            'scores': association_scores,
+            'sum': sum(association_scores),
+            'clues_matched_info': ['X' if x!=unfound_pair_score else '_' for x in association_scores],
+            'clues_matched_count': sum([1 for x in association_scores if x!=unfound_pair_score])            
         }    
     # k[0] stand for alphabetical order (breaking tie with alphabetical order)
     sorted_x_table_groups = sorted(x_table.items(),key=lambda k:(-k[1]['clues_matched_count'],-k[1]['sum'], k[0]))
@@ -70,6 +74,21 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
             print('{}: {} -> sum({}) = {}'.format(key,value['clues_matched_count'], value['scores'], value['sum']))
     else:
         return x_table, sorted_x_table_sum, sorted_x_table_groups
+
+def getBestWordAssociationGroups(matrix, clues, unfound_pair_score, nBest=10):
+    x_table, sorted_x_table_sum, sorted_x_table_groups = computeBestWordAssociation(matrix, clues, unfound_pair_score)
+    result = []
+    for ranked_solution,value in sorted_x_table_sum[:nBest]:
+            scores = ', '.join(['{0:.1f}'.format(s) for s in value['scores']])
+            clues_matched_count = value['clues_matched_count']
+            scores_sum = '{0:.1f}'.format(value['sum'])
+            result.append({
+                'ranked_solution': ranked_solution,
+                'clues_matched_count': clues_matched_count,
+                'scores': scores,
+                'scores_sum': scores_sum
+            })  
+    return result          
 
 def reportBestWordAssociationGroups(matrix, clues, unfound_pair_score, sets=[5,4], nBest=10):
     x_table, sorted_x_table_sum, sorted_x_table_groups = computeBestWordAssociation(matrix, clues, unfound_pair_score)
@@ -166,14 +185,61 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
         '\nMean Reciprocal Rank score group rank: {0:.1f}'.format(MRR_score_group_rank),
 
     ]
-    print('\n'.join(summary))
     if output_file:
         with open(output_file, 'w') as f_out:
             print_write(f_out, '\n'.join(summary))
             print_write(f_out, '\n\nPosition Details:\n\n')
             print_write(f_out, '\n'.join(eval_details))
+    else:
+        print('\n'.join(summary))
 
-def solver(matrix):
+def batch_solver(matrix, game_set_file, output_file, nBest=100, extra_search=False):
+    import corpora
+    import lexicon
+    from lexicon import morph_normalize_word
+    unfound_pair_score = matrix.get_min_association_score()
+    lex_freq_dict = lexicon.loadLexFreqFromFile(corpora.PAISA_LEX_FREQ_FILE)
+    #most_freq_words = [item[0] for item in sorted(lex_freq_dict.items(), key=lambda x: -x[1])]
+    nouns_lex_freq_dict = lexicon.loadLexFreqFromFile(corpora.PAISA_SOSTANTIVI_FREQ_FILE)
+    most_freq_nouns = [item[0] for item in sorted(nouns_lex_freq_dict.items(), key=lambda x: -x[1])]
+    game_set = read_game_set_tab(game_set_file)
+    output_lines = []
+    for game_words in game_set:
+        clues = game_words[:5]
+        result = getBestWordAssociationGroups(matrix, clues, unfound_pair_score, nBest)
+        if extra_search and len(result)<100:      
+            morphed_clues = [morph_normalize_word(c,lex_freq_dict) for c in clues]  
+            if morphed_clues != clues:  
+                result += getBestWordAssociationGroups(matrix, morphed_clues, unfound_pair_score, nBest)
+                # resorting results (omitting if we want to give more relevance to unmorphed clues)
+                # result = sorted(result, key=lambda r: r['scores_sum'])
+        if len(result)==0:            
+            best_solution = most_freq_nouns[0]
+            clues_matched_count = 0
+            scores = -9999
+            scores_sum = -9999
+            remaining_solutions = most_freq_nouns[1:nBest]
+        else:    
+            best_result = result[0]            
+            other_results = result[1:]
+            best_solution = best_result['ranked_solution']
+            clues_matched_count = best_result['clues_matched_count']
+            scores = best_result['scores']
+            scores_sum = best_result['scores_sum']
+            remaining_solutions = [r['ranked_solution'] for r in other_results]
+            if len(remaining_solutions)<(nBest-1):
+                missing_count = nBest - 1 - len(remaining_solutions)
+                missing_nouns = [n for n in most_freq_nouns if n!=best_solution and n not in other_results][:missing_count]
+                remaining_solutions += missing_nouns
+        remaining_solutions_str = ', '.join(remaining_solutions)
+        report_fields = clues + [best_solution, clues_matched_count, scores, scores_sum, remaining_solutions_str]            
+        output_lines.append('\t'.join([str(x) for x in report_fields]))
+    print('Input lines: {}'.format(len(game_set)))
+    print('Output lines: {}'.format(len(output_lines)))
+    with open(output_file, 'w') as f_out:
+        print_write(f_out, '\n'.join(output_lines))        
+
+def interactive_solver(matrix):
     unfound_pair_score = matrix.get_min_association_score()
     print("Min association score: {0:.1f}".format(unfound_pair_score)) 
     while True:
@@ -186,7 +252,7 @@ def solver(matrix):
         clues = [w.strip() for w in text.split(sep)]
         if len(clues)!=5:
             print('Hai inserito {} parole, riprova.\n'.format(len(clues)))
-            continue
+            continue            
         reportBestWordAssociationGroups(matrix, clues, unfound_pair_score, sets=[5,4,3], nBest=5)
         solution = input('\nInserisci la parola corretta o premi invio per testare nuove parole\n--> ')
         solution = solution.strip().lower()

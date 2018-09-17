@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 
 from collections import defaultdict
 import math
@@ -62,11 +64,11 @@ class Matrix_Sparse(Matrix_Base):
                 (word_freq_in_pairs[0,x_index] * word_freq_in_pairs[0,y_index])
             )
 
-    def get_association_score(self, w1, w2):
+    def get_association_score(self, w1, w2, unfound_score):
         i1 = self.get_word_index(w1)
         i2 = self.get_word_index(w2)
         if i1 is None or i2 is None:
-            return self.get_min_association_score()
+            return unfound_score
         return self.table[i1,i2]      
 
     def get_min_association_score(self):    

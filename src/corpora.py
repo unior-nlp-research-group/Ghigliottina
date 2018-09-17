@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import gzip
 
@@ -7,9 +8,17 @@ GAME_SET_100_FILE = DATA_DIR + "game_set_100.tsv"
 NLP4FUN_DEV_XML_v1_FILE = DATA_DIR + "nlp4fun_train_v1.xml"
 NLP4FUN_DEV_TSV_v1_FILE = DATA_DIR + "nlp4fun_train_v1.tsv"
 
-NLP4FUN_DEV_XML_v2_FILE = DATA_DIR + "nlp4fun_train_v2.xml"
-NLP4FUN_DEV_TSV_v2_tv_FILE = DATA_DIR + "nlp4fun_train_v2_tv.tsv"
-NLP4FUN_DEV_TSV_v2_bg_FILE = DATA_DIR + "nlp4fun_train_v1_bg.tsv"
+NLP4FUN_DEV_XML_v2_FILE = DATA_DIR + "nlp4fun_dev_v2.xml"
+NLP4FUN_DEV_TSV_v2_tv_FILE = DATA_DIR + "nlp4fun_dev_v2_tv.tsv"
+NLP4FUN_DEV_TSV_v2_bg_FILE = DATA_DIR + "nlp4fun_dev_v2_bg.tsv"
+NLP4FUN_DEV_TSV_v2_ALL_FILE = DATA_DIR + "nlp4fun_dev_v2_all.tsv"
+
+NLP4FUN_TEST_XML_v2_FILE = DATA_DIR + "nlp4fun_test_10092018_v2.xml"
+NLP4FUN_TEST_TSV_v2_tv_FILE = DATA_DIR + "nlp4fun_test_v2_tv.tsv"
+NLP4FUN_TEST_TSV_v2_bg_FILE = DATA_DIR + "nlp4fun_test_v2_bg.tsv"
+NLP4FUN_TEST_TSV_v2_ALL_FILE = DATA_DIR + "nlp4fun_test_v2_all.tsv"
+
+WORD_TO_VEC_GLOVE_MODEL = '/Users/fedja/scratch/CORPORA/Word2Vec/glove_wiki_window10_size300_iteration50.tar.gz'
 
 # CORPORA
 
@@ -246,22 +255,6 @@ def getSostantiviSetFromPaisa(min_freq, inflected):
     return sostantivi_lex_set
 
 
-def analizeFreq(corpus_info):
-    import patterns_extraction    
-    from collections import defaultdict
-    lines_extractor = corpora.extract_lines(corpus_info)
-    lex_freq = defaultdict(int)
-    for line in lines_extractor:
-        tokens = patterns_extraction.tokenizeLineReplaceWordCats(line)
-        for t in tokens:
-            lex_freq[t] += 1
-    for CAT in patterns_extraction.ALL_CATS:
-        if CAT in lex_freq:
-            del lex_freq[CAT]  
-    with open(PAISA_LEX_FREQ_FILE, 'w') as f_out:
-        for w,f in sorted(lex_freq.items(), key=lambda x: -x[1]):
-            f_out.write('{}\t{}\n'.format(f,w))
-
 def builDizAugmentedPaisa(lexPosFreqFile, lexPosBaseFile, min_freq, output_file):    
     import lexicon
     vowels = [v for v in 'aeiou']    
@@ -329,34 +322,3 @@ def getWikiDataPeople(split_names):
                 people_name_set.add(item['name'])
         return people_name_set
 
-def convertDataSetXmlToTsv():
-    games = {
-        'TV': [],
-        'boardgame': []
-    }
-    current_game = []
-    clue_tag_open, clue_tag_close = '<clue>', '</clue>'
-    solution_tag_open, solution_tag_close = '<solution>', '</solution>'
-    type_tag_open, type_tag_close = '<type>', '</type>'
-    with open(NLP4FUN_DEV_XML_v2_FILE) as f_in:
-        for line in f_in:
-            if clue_tag_open in line:
-                line = line.replace(clue_tag_close, clue_tag_open)
-                clue = line.split(clue_tag_open)[1]
-                current_game.append(clue)
-            elif solution_tag_open in line:
-                line = line.replace(solution_tag_close, solution_tag_open)
-                solution = line.split(solution_tag_open)[1]
-                current_game.append(solution)
-            elif type_tag_open in line:
-                line = line.replace(type_tag_close, type_tag_open)
-                type = line.split(type_tag_open)[1]
-                games[type].append(current_game)
-                current_game = []
-
-    with open(NLP4FUN_DEV_TSV_v2_tv_FILE, 'w') as f_out:
-        for g in games['TV']:
-            f_out.write('\t'.join(g) + '\n')
-    with open(NLP4FUN_DEV_TSV_v2_bg_FILE, 'w') as f_out:
-        for g in games['boardgame']:
-            f_out.write('\t'.join(g) + '\n')

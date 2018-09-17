@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import m3u8
 import requests
 

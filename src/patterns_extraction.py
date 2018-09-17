@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import re
 import utility
@@ -126,43 +127,3 @@ def addPatternsFromLine(line, matrix, lex_set, weight=1, debug=False):
     return patterns_count
 
 
-def getLinesConfirmingSolution(clues, solution):    
-    clues = [x.lower() for x in clues]
-    solution = solution.lower()
-    lexicon_freq = loadLexFreqFromFile()
-    lex_set = lexicon_freq.keys()
-    result = defaultdict(list)
-    with gzip.open(PAISA_ROW_INPUT, 'rt') as f_in:        
-        line_count = 0        
-        for line in f_in:            
-            line_count += 1
-            if line_count%500000==0:
-                print(str(line_count))
-            tokens = tokenizeLine(line)
-            if tokens == None:
-                continue
-            tokens_cat = replaceWordCats(tokens, lex_set, inplace=False)            
-            prep_det_indexes = replacePrepDetCatWithPrepArt(tokens_cat)
-            for i in reversed(prep_det_indexes):
-                tokens[i] = '{} {}'.format(tokens[i], tokens[i+1])
-                tokens.pop(i+1)
-            #print("{} {}".format(line_count, line))          
-            bigrams, trigrams = None, None
-            if solution in tokens_cat:
-                for c in clues:
-                    if c in tokens_cat:
-                        if bigrams==None:
-                            bigrams=utility.ngrams(tokens_cat,2)
-                            trigrams=utility.ngrams(tokens_cat,3)   
-                        for i, b in enumerate(bigrams):
-                            if c in b and solution in b:
-                                fragment = ' '.join(tokens[i-5:i+7])
-                                result[c].append(fragment)
-                                #print("{} {}\n\t{}".format(c,s,line))
-                        for i, t in enumerate(trigrams):
-                            if t[1] in ALL_PATTERN_CATS and c in t and solution in t:
-                                fragment = ' '.join(tokens[i-5:i+5])
-                                result[c].append(fragment)
-                                #print("{} {}\n\t{}".format(c,s,line))
-    for c,lines in result.items():
-        print("{}\n\t{}".format(c,'\n\t'.join(lines))) 

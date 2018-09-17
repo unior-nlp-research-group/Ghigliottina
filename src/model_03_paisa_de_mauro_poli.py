@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 
 import corpora
 import utility
@@ -6,7 +8,6 @@ import path
 import matrix_dict
 import lexicon
 import scorer
-import patterns_extraction
 
 ######################################
 ## MODEL 03 PAISA + DE MAURO POLIREMATICHE (only lex from poli)
@@ -49,14 +50,14 @@ def eval():
     print('Evaluating')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
 
-def solver():
+def interactive_solver():
     print('Loading association matrix')
     matrix = matrix_dict.Matrix_Dict()
     matrix.read_matrix_from_file(MATRIX_FILE)
-    scorer.solver(matrix)
+    scorer.interactive_solver(matrix)
 
 if __name__=='__main__':  
     build_and_eval()
-    #solver()
+    #interactive_solver()
     #eval()
     

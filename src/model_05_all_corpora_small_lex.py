@@ -1,12 +1,14 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import corpora
 import utility
 import path
 import matrix_dict
+
+
 import lexicon
 import scorer
-import patterns_extraction
 
 ######################################
 ## MODEL 05 ALL CORPORA small lex
@@ -23,6 +25,11 @@ EVAL_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_eval.txt"
 EVAL_WORD_NLP4FUN_DEV_TV_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_TV_eval.txt"
 EVAL_WORD_NLP4FUN_DEV_BG_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_BG_eval.txt"
 
+TEST_SET = corpora.GAME_SET_100_FILE
+TEST_RESULTS_CSV_1 = OUTPUT_DIR + 'NLP4FUN_TEST_v2_ALL_results_1.tsv'
+TEST_RESULTS_CSV_2 = OUTPUT_DIR + 'NLP4FUN_TEST_v2_ALL_results_2.tsv'
+TEST_RESULTS_SUBMIT_1 = OUTPUT_DIR + 'nlp4fun2018.orientale.run1'
+TEST_RESULTS_SUBMIT_2 = OUTPUT_DIR + 'nlp4fun2018.orientale.run2'
 
 DE_MAURO_WEIGHT = 200
 PROVERBI_WEIGHT = 100
@@ -53,7 +60,7 @@ def build_and_eval():
     lexicon.printLexiconToFile(lex_solution_set, SOLUTION_LEX_FREQ_FILE)
 
     print('Computing lex coverage')
-    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
+    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, TEST_SET, COVERAGE_WORD_GAME100_FILE)
     
     print('Building association matrix')
     matrix = matrix_dict.Matrix_Dict(lex_set, lex_solution_set)
@@ -68,26 +75,30 @@ def build_and_eval():
     matrix.compute_association_scores()
     matrix.write_matrix_to_file(MATRIX_FILE)
     print('Eval')
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, TEST_SET, EVAL_WORD_GAME100_FILE)
 
 def eval():
+    from convert_xml import output_results
     print('Loading association matrix')
     matrix = matrix_dict.Matrix_Dict()
     matrix.read_matrix_from_file(MATRIX_FILE)
     print('Evaluating')
-    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_tv_FILE, EVAL_WORD_NLP4FUN_DEV_TV_FILE)
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_bg_FILE, EVAL_WORD_NLP4FUN_DEV_BG_FILE)
+    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, TEST_SET, EVAL_WORD_GAME100_FILE)
+    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_tv_FILE, EVAL_WORD_NLP4FUN_DEV_TV_FILE)
+    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_bg_FILE, EVAL_WORD_NLP4FUN_DEV_BG_FILE)
+    scorer.batch_solver(matrix, corpora.NLP4FUN_TEST_TSV_v2_ALL_FILE, TEST_RESULTS_CSV_1, extra_search=False)
+    scorer.batch_solver(matrix, corpora.NLP4FUN_TEST_TSV_v2_ALL_FILE, TEST_RESULTS_CSV_2, extra_search=True)
+    output_results(corpora.NLP4FUN_TEST_XML_v2_FILE, TEST_RESULTS_CSV_1, TEST_RESULTS_SUBMIT_1)
+    output_results(corpora.NLP4FUN_TEST_XML_v2_FILE, TEST_RESULTS_CSV_2, TEST_RESULTS_SUBMIT_2)
 
-
-def solver():
+def interactive_solver():
     print('Loading association matrix')
     matrix = matrix_dict.Matrix_Dict()
     matrix.read_matrix_from_file(MATRIX_FILE)
-    scorer.solver(matrix)
+    scorer.interactive_solver(matrix)
 
 if __name__=='__main__':  
     #build_and_eval()
-    #solver()
+    #interactive_solver()
     eval()
     

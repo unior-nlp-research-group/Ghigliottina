@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 from collections import defaultdict
 import math
@@ -49,11 +50,11 @@ class Matrix_Dict(Matrix_Base):
             for y,f in x_friends.items():
                 x_friends[y] = math.log(total_pairs_freq_sum * f/(word_freq_in_pairs[x]*word_freq_in_pairs[y]))
 
-    def get_association_score(self, w1, w2):
+    def get_association_score(self, w1, w2, unfound_score):
         if w1 not in self.table:
-            return None
+            return unfound_score
         sub_table = self.table.get(w1)    
-        return sub_table.get(w2, None)
+        return sub_table.get(w2, unfound_score)
 
     def get_min_association_score(self):    
         return min(score for sub_table in self.table.values() for score in sub_table.values())

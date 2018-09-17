@@ -1,24 +1,8 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from collections import defaultdict
-
-def buildLexicon(corpus_info, lexicon_freq=defaultdict(int)):
-    import patterns_extraction
-    lines_extractor = extract_lines(corpus_info)
-    for line in lines_extractor:            
-        tokens = patterns_extraction.tokenizeLineReplaceWordCats(line)
-        if tokens is None:
-            continue            
-        for w in tokens:
-            if w not in ALL_CATS:
-                lexicon_freq[w] += 1 
-    return lexicon_freq
-
-def pruneLexicon(lexicon_freq, prune_ge_freq):
-    original_size = len(lexicon_freq)    
-    pruned_lexicon_freq = { w:f for w,f in lexicon_freq.items() if f >= prune_ge_freq }  
-    new_size = len(pruned_lexicon_freq)  
-    print('Pruned lex: {} -> {}'.format(original_size, new_size))
-    return pruned_lexicon_freq  
+import corpora
 
 def printLexFreqToFile(lex_freq, lex_file_out):
    print("Saving lex to file")
@@ -69,3 +53,42 @@ def buildLexIndex(corpora_dict_list, lex_file_in, lex_index_file_out):
     print("Saving lex index to file")
     lexicon_index = default_to_regular(lexicon_index)
     dumpObjToPklFile(lexicon_index, lex_index_file_out)     
+
+def morph_normalize_word(c, lex_freq_dict):
+    trans = {
+        'i': ['o','a','e'],
+        'e': ['a']
+    }
+    '''
+    trans = {
+        'i': [
+            'o', # casi -> caso
+            'a', # problemi -> problema
+            'e', # forbici -> forbice
+            'ie', # superfici -> superficie
+            'io' # figli -> figlio
+        ], 
+        'e': [
+            'a' # perle -> perla
+            'ia' # province -> provincia
+        ],
+        'a': [
+            'o' # uova -> uovo
+        ],
+        'hi': [
+            'o', # luoghi -> luogo
+            'a' # colleghi -> collega
+        ],
+        'trice': [
+            'tore' # isruttrice -> istruttore
+        ]
+    }
+    '''
+    result_freq = {}
+    for k, vlist in trans.items():
+        if c.endswith(k):
+            for v in vlist:
+                morphed = c[:-len(k)]+v
+                if morphed in lex_freq_dict:
+                    result_freq[morphed]=lex_freq_dict[morphed]
+    return [item[0] for item in sorted(result_freq.items(), key=lambda x: -x[1])][0] if result_freq else c

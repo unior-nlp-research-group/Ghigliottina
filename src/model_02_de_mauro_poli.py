@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 
 import corpora
 import utility
@@ -6,7 +8,6 @@ import path
 import matrix_dict
 import lexicon
 import scorer
-import patterns_extraction
 
 from matrix_dict import Matrix_Dict as Matrix
 #from matrix_sparse import Matrix_Sparse as Matrix
@@ -62,14 +63,14 @@ def eval():
     print('Evaluating')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
 
-def solver():
+def interactive_solver():
     print('Loading association matrix')
     matrix = Matrix()
     matrix.read_matrix_from_file(MATRIX_FILE)
-    scorer.solver(matrix)
+    scorer.interactive_solver(matrix)
 
 if __name__=='__main__':  
-    build_and_eval()
-    #solver()
-    #eval()
+    #build_and_eval()
+    #interactive_solver()
+    eval()
     
