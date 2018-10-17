@@ -18,6 +18,13 @@ NLP4FUN_TEST_TSV_v2_tv_FILE = DATA_DIR + "nlp4fun_test_v2_tv.tsv"
 NLP4FUN_TEST_TSV_v2_bg_FILE = DATA_DIR + "nlp4fun_test_v2_bg.tsv"
 NLP4FUN_TEST_TSV_v2_ALL_FILE = DATA_DIR + "nlp4fun_test_v2_all.tsv"
 
+NLP4FUN_GOLD_XML_v2_FILE = DATA_DIR + "nlp4fun_gold_test.xml"
+NLP4FUN_GOLD_TSV_v2_bg_FILE = DATA_DIR + "nlp4fun_gold_test_tv.tsv"
+NLP4FUN_GOLD_TSV_v2_tv_FILE = DATA_DIR + "nlp4fun_gold_test_bg.tsv"
+NLP4FUN_GOLD_TSV_v2_ALL_FILE = DATA_DIR + "nlp4fun_gold_test_all.tsv"
+
+NLP4FUN_DEV_GOLD_TSV_ALL_FILE = DATA_DIR + "nlp4fun_dev+test_all.tsv"
+
 WORD_TO_VEC_GLOVE_MODEL = '/Users/fedja/scratch/CORPORA/Word2Vec/glove_wiki_window10_size300_iteration50.tar.gz'
 
 # CORPORA

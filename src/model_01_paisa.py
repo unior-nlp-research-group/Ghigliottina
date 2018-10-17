@@ -21,8 +21,8 @@ LEX_INDEX_FILE = OUTPUT_DIR + "paisa_lex_index.pkl"
 MATRIX_FILE = OUTPUT_DIR + "matrix.pkl"
 COVERAGE_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_coverage.txt"
 EVAL_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_eval.txt"
-EVAL_WORD_NLP4FUN_DEV_TV_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_TV_eval.txt"
-EVAL_WORD_NLP4FUN_DEV_BG_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_BG_eval.txt"
+EVAL_NLP4FUN_DEV_TV_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_TV_eval.txt"
+EVAL_NLP4FUN_DEV_BG_FILE = OUTPUT_DIR + "game_word_NP4FUN_DEV_BG_eval.txt"
 
 def coverage():
     lexicon_freq = lexicon.loadLexFreqFromFile(LEX_FREQ_FILE)
@@ -52,8 +52,8 @@ def build_and_eval():
 
     print('Eval')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE)
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_tv_FILE, EVAL_WORD_NLP4FUN_DEV_TV_FILE)
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_bg_FILE, EVAL_WORD_NLP4FUN_DEV_BG_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_tv_FILE, EVAL_NLP4FUN_DEV_TV_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_TSV_v2_bg_FILE, EVAL_NLP4FUN_DEV_BG_FILE)
 
 def eval():
     print('Loading association matrix')

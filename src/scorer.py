@@ -49,7 +49,43 @@ def computeCoverageOfGameWordLex(lex_set, lex_solution_set, game_set_file, outpu
 
 def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, nBest=10):
     if debug:
-        print('Input clues: {}'.format(clues)) 
+        print('Input clues: {}'.format(clues))     
+
+    '''
+    # variant 2
+    x_table = {}
+
+    def update_x_table(x_key, clue_index, x_clue_score, multi_tokens=False, last_multi_tokens=False):
+        if x_key in x_table:
+            entry = x_table[x_key]
+        else:
+            entry = x_table[x_key] = {
+                'scores': [unfound_pair_score for i in range(5)],
+                'multi_token_scores': [[] for i in range(5)],
+                'sum': unfound_pair_score * 5,
+                'clues_matched_info': ['_' for i in range(5)],
+                'clues_matched_count': 0
+            }  
+        if multi_tokens:
+            multi_token_scores = entry['multi_token_scores'][clue_index]
+            multi_token_scores.append(x_clue_score)
+            if last_multi_tokens:
+                entry['clues_matched_count'] += 1
+                entry['scores'][clue_index] = avg_x_clue_score = sum(multi_token_scores)/len(multi_token_scores)
+                entry['sum'] += avg_x_clue_score - unfound_pair_score
+                entry['clues_matched_info'][clue_index] = 'X'
+        else:
+            entry['clues_matched_count'] += 1
+            entry['scores'][clue_index] = x_clue_score
+            entry['sum'] += x_clue_score - unfound_pair_score
+            entry['clues_matched_info'][clue_index] = 'X'
+
+
+    matrix.get_solutions_table(clues, update_x_table)        
+    # end of variant 2
+    '''
+
+    # variant 1
     clues_words = [w for c in clues for w in c.split()]
     union, intersection = matrix.get_union_intersection(clues_words)        
     x_table = {}
@@ -66,6 +102,8 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
             'clues_matched_info': ['X' if x!=unfound_pair_score else '_' for x in association_scores],
             'clues_matched_count': sum([1 for x in association_scores if x!=unfound_pair_score])            
         }    
+    # end of variant 1
+
     # k[0] stand for alphabetical order (breaking tie with alphabetical order)
     sorted_x_table_groups = sorted(x_table.items(),key=lambda k:(-k[1]['clues_matched_count'],-k[1]['sum'], k[0]))
     sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
@@ -123,12 +161,13 @@ def read_game_set_tab(game_set_file):
             game_set.append(tokens)
     return game_set
 
+WORST_RANK_DEFAULT = -1
+
 def getSolutionRank(matrix, clues, solution, unfound_pair_score):    
     x_table, sorted_x_table_sum, sorted_x_table_groups = computeBestWordAssociation(matrix, clues, unfound_pair_score)    
     sorted_table_sum_keys = [i[0] for i in sorted_x_table_sum]
     sorted_table_groups_keys = [i[0] for i in sorted_x_table_groups]    
-    if solution not in sorted_table_sum_keys:
-        WORST_RANK_DEFAULT = 9999
+    if solution not in sorted_table_sum_keys:        
         return WORST_RANK_DEFAULT, WORST_RANK_DEFAULT, 0, WORST_RANK_DEFAULT, [unfound_pair_score]*5, ['_']*5
     abs_rank = sorted_table_sum_keys.index(solution)+1
     group_rank = sorted_table_groups_keys.index(solution)+1
@@ -194,6 +233,7 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
         print('\n'.join(summary))
 
 def batch_solver(matrix, game_set_file, output_file, nBest=100, extra_search=False):
+    import time
     import corpora
     import lexicon
     from lexicon import morph_normalize_word
@@ -203,8 +243,9 @@ def batch_solver(matrix, game_set_file, output_file, nBest=100, extra_search=Fal
     nouns_lex_freq_dict = lexicon.loadLexFreqFromFile(corpora.PAISA_SOSTANTIVI_FREQ_FILE)
     most_freq_nouns = [item[0] for item in sorted(nouns_lex_freq_dict.items(), key=lambda x: -x[1])]
     game_set = read_game_set_tab(game_set_file)
-    output_lines = []
+    output_lines_clues_matched = []
     for game_words in game_set:
+        start_time = time.time()
         clues = game_words[:5]
         result = getBestWordAssociationGroups(matrix, clues, unfound_pair_score, nBest)
         if extra_search and len(result)<100:      
@@ -232,12 +273,56 @@ def batch_solver(matrix, game_set_file, output_file, nBest=100, extra_search=Fal
                 missing_nouns = [n for n in most_freq_nouns if n!=best_solution and n not in other_results][:missing_count]
                 remaining_solutions += missing_nouns
         remaining_solutions_str = ', '.join(remaining_solutions)
-        report_fields = clues + [best_solution, clues_matched_count, scores, scores_sum, remaining_solutions_str]            
-        output_lines.append('\t'.join([str(x) for x in report_fields]))
+        elapsed_time = int(round(time.time() - start_time) * 1000)
+        report_fields = clues + [best_solution, clues_matched_count, scores, scores_sum, remaining_solutions_str, elapsed_time]            
+        output_lines_clues_matched.append('\t'.join([str(x) for x in report_fields]))
     print('Input lines: {}'.format(len(game_set)))
-    print('Output lines: {}'.format(len(output_lines)))
+    print('Output lines: {}'.format(len(output_lines_clues_matched)))
     with open(output_file, 'w') as f_out:
-        print_write(f_out, '\n'.join(output_lines))        
+        print_write(f_out, '\n'.join(output_lines_clues_matched))        
+
+def compute_correlation_score_match(matrix, game_set_file, output_file_clues_matched, output_file_solutions_matched):
+    import corpora
+    import lexicon
+    unfound_pair_score = matrix.get_min_association_score()
+    lex_freq_dict = lexicon.loadLexFreqFromFile(corpora.PAISA_LEX_FREQ_FILE)
+    nouns_lex_freq_dict = lexicon.loadLexFreqFromFile(corpora.PAISA_SOSTANTIVI_FREQ_FILE)
+    most_freq_nouns = [item[0] for item in sorted(nouns_lex_freq_dict.items(), key=lambda x: -x[1])]
+    game_set = read_game_set_tab(game_set_file)
+    output_lines_clues_matched = []    
+    output_lines_clues_matched.append('\t'.join(['Scores', 'Matched']))
+    scores_guessed = []
+    scores_missed = []
+    for game_words in game_set:
+        clues = game_words[:5]
+        gold_solution = game_words[5]
+        result = getBestWordAssociationGroups(matrix, clues, unfound_pair_score, nBest=100)
+        if len(result)==0:            
+            best_solution = most_freq_nouns[0]
+            clues_matched_count = 0
+            scores_sum = unfound_pair_score * 5
+        else:    
+            best_result = result[0]            
+            best_solution = best_result['ranked_solution']
+            clues_matched_count = best_result['clues_matched_count']
+            scores = best_result['scores']
+            scores_sum = best_result['scores_sum']
+        if best_solution == gold_solution:
+            scores_guessed.append(scores_sum)
+        else:
+            scores_missed.append(scores_sum)        
+        output_lines_clues_matched.append('{}\t{}'.format(scores_sum, clues_matched_count))
+    with open(output_file_clues_matched, 'w') as f_out:
+        print_write(f_out, '\n'.join(output_lines_clues_matched))  
+    with open(output_file_solutions_matched, 'w') as f_out:
+        print_write(f_out, '\t'.join(['Scores Guessed', 'Scores Missed']) + '\n')
+        max_lines = max(len(scores_guessed),len(scores_missed))
+        for i in range(max_lines):
+            if i < len(scores_guessed):
+                print_write(f_out, str(scores_guessed[i]))
+            if i < len(scores_missed):
+                print_write(f_out, '\t' + str(scores_missed[i]))
+            print_write(f_out, '\n')
 
 def interactive_solver(matrix):
     unfound_pair_score = matrix.get_min_association_score()
@@ -257,12 +342,12 @@ def interactive_solver(matrix):
         solution = input('\nInserisci la parola corretta o premi invio per testare nuove parole\n--> ')
         solution = solution.strip().lower()
         if not solution:
-            continue
-        if solution not in matrix:
-            print('La parola "{}" non presente nel dizionario\n'.format(solution))
-            continue
+            continue        
         abs_rank, group_rank, group, rank_in_group, scores, clues_matched_info = getSolutionRank(
             matrix, clues, solution, unfound_pair_score)
+        if abs_rank == WORST_RANK_DEFAULT:
+            print('La parola "{}" non è presente tra le migliori soluzioni\n'.format(solution))
+            continue
         print("\nScores: " + ', '.join(['{0:.1f}'.format(s) for s in scores]))
         print("\nAbs rank:{}\nGroup rank:{}\nGROUP (matched clues):{}\nPosition in group:{}\nClues matched:{}\n".format(
             abs_rank, group_rank, group, rank_in_group, clues_matched_info))

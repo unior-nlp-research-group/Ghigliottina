@@ -28,5 +28,6 @@ def ngrams(input, n):
     return [input[i:i+n] for i in range(len(input)-n+1)]      
 
 def print_write(f_out, string):
-    print(string)
+    import sys
+    sys.stdout.write(string)
     f_out.write(string)

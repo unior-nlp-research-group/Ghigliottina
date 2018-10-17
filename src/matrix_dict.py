@@ -20,6 +20,8 @@ class Matrix_Dict(Matrix_Base):
         self.table = utility.default_to_regular(self.table)
         utility.dumpObjToPklFile(self.table, file_output)
 
+    def size(self):
+        return len(self.table)
     ##############################
     # Defined in base class
     ##############################
@@ -93,6 +95,23 @@ class Matrix_Dict(Matrix_Base):
         '''
         return union, intersection
 
+    def get_solutions_table(self, clues, update_x_table):
+        '''
+        clues may have spaces
+        update_x_table(x_key, clue_index, x_clue_score)
+        only if matches
+        '''
+        for i,c in enumerate(clues):
+            cw_list = c.split()
+            multi_tokens = len(cw_list)>1
+            for j, cw in enumerate(cw_list):
+                last_multi_tokens = j == len(cw_list)-1
+                clue_subtable = self.table.get(cw, None)
+                if clue_subtable is None:
+                    continue
+                for solution,score in clue_subtable.items():
+                    if solution not in clues:                        
+                        update_x_table(solution, i, score, multi_tokens, last_multi_tokens)
 
     def printAssociationMatrix(matrix_file_in, output_file):
         matrix = loadObjFromPklFile(matrix_file_in)
@@ -101,3 +120,9 @@ class Matrix_Dict(Matrix_Base):
                 f_out.write('{}\n'.format(w1))
                 for w2, f in d.items():
                     f_out.write('\t{} ({})\n'.format(w2, f))
+
+    def split_matrix_dict(self, ouput_dir):
+        import os
+        for w,d in self.table.items():
+            file_pkl = os.path.join(ouput_dir, '{}.pkl'.format(w))
+            utility.dumpObjToPklFile(d, file_pkl)

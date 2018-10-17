@@ -133,11 +133,18 @@ def convert_test_xml_to_csv_et():
     file_out_all_csv = corpora.NLP4FUN_TEST_TSV_v2_ALL_FILE
     xml2csv(file_in_xml, file_out_bg_csv, file_out_tv_csv, file_out_all_csv)
 
+def convert_gold_xml_to_csv_et():
+    file_in_xml = corpora.NLP4FUN_GOLD_XML_v2_FILE
+    file_out_bg_csv = corpora.NLP4FUN_GOLD_TSV_v2_bg_FILE
+    file_out_tv_csv = corpora.NLP4FUN_GOLD_TSV_v2_tv_FILE
+    file_out_all_csv = corpora.NLP4FUN_GOLD_TSV_v2_ALL_FILE
+    xml2csv(file_in_xml, file_out_bg_csv, file_out_tv_csv, file_out_all_csv)
+
+
 def output_results(file_in_xml, file_in_csv, file_out):
     import xml.etree.ElementTree as etree
     import model_05_all_corpora_small_lex as model05
     import csv
-    import random
     
     #file_in_csv = model05.TEST_RESULTS_CSV
     #file_out = model05.TEST_RESULTS_SUBMIT
@@ -147,7 +154,7 @@ def output_results(file_in_xml, file_in_csv, file_out):
         result_entries.append({
             'sorted_clues': sorted(row[:5]),
             'solutions': [row[5]] + (row[9].split(', ') if len(row)>9 and row[9] else []),
-            'time': random.randint(600, 1800)
+            'time': row[10]
         })
 
     #file_in_xml = corpora.NLP4FUN_TEST_XML_v2_FILE    
@@ -172,7 +179,8 @@ def output_results(file_in_xml, file_in_csv, file_out):
 
 if __name__=='__main__':      
     #convert_test_xml_to_csv_et()
-    output_results()
+    #output_results()
+    convert_gold_xml_to_csv_et()
     
 
     
