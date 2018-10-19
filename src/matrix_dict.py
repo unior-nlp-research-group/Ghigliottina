@@ -52,48 +52,29 @@ class Matrix_Dict(Matrix_Base):
             for y,f in x_friends.items():
                 x_friends[y] = math.log(total_pairs_freq_sum * f/(word_freq_in_pairs[x]*word_freq_in_pairs[y]))
 
-    def get_association_score(self, w1, w2, unfound_score):
-        if w1 not in self.table:
-            return unfound_score
-        sub_table = self.table.get(w1)    
-        return sub_table.get(w2, unfound_score)
-
     def get_min_association_score(self):    
         return min(score for sub_table in self.table.values() for score in sub_table.values())
 
     def get_max_association_score(matrix):    
         return max(score for sub_table in self.table.values() for score in sub_table.values())
 
-    def get_union_intersection(self, clues):
-        union = None
-        intersection = None
-        word_rows = []
+    def get_association_score(self, w1, w2, unfound_score):
+        if w1 not in self.table:
+            return unfound_score
+        sub_table = self.table.get(w1)    
+        return sub_table.get(w2, unfound_score)
+
+    def get_solution_set(self, clues):
+        union = set()
         for w in clues:
             if w in self.table.keys():
                 row = self.table[w]
                 associated_words = row.keys()
-                word_rows.append(row)
-                if union is None:
-                    union = set(associated_words)
-                    intersection = set(associated_words)
-                else:
-                    union = union.union(associated_words)
-                    intersection = intersection.intersection(associated_words)
-        if union is None:
-            union = set()
-            intersection = set()
+                union = union.union(associated_words)
         for c in clues:
             if c in union:
                 union.remove(c)
-            if c in intersection:
-                intersection.remove(c)
-        '''
-        if debug:
-            print('{}/{} clues found in structure'.format(len(word_rows),len(clues)))
-            print('Union: {}'.format(union))
-            print('Intersection: {}'.format(intersection))    
-        '''
-        return union, intersection
+        return union
 
     def get_solutions_table(self, clues, update_x_table):
         '''
@@ -113,16 +94,25 @@ class Matrix_Dict(Matrix_Base):
                     if solution not in clues:                        
                         update_x_table(solution, i, score, multi_tokens, last_multi_tokens)
 
-    def printAssociationMatrix(matrix_file_in, output_file):
-        matrix = loadObjFromPklFile(matrix_file_in)
-        with open(output_file, 'w') as f_out:        
-            for w1,d in matrix.items():
-                f_out.write('{}\n'.format(w1))
-                for w2, f in d.items():
-                    f_out.write('\t{} ({})\n'.format(w2, f))
-
     def split_matrix_dict(self, ouput_dir):
         import os
         for w,d in self.table.items():
             file_pkl = os.path.join(ouput_dir, '{}.pkl'.format(w))
             utility.dumpObjToPklFile(d, file_pkl)
+
+    def print_row_column_sets(self, row_output_file, column_output_file):
+        import lexicon
+        row_set = set(self.table.keys())
+        column_set = set()
+        for subtable in self.table.values():
+            column_set.update(subtable.keys())
+        lexicon.printLexiconToFile(row_set, row_output_file)
+        lexicon.printLexiconToFile(column_set, column_output_file)
+
+    def reverse_matrix(self):
+        matrix = Matrix_Dict()
+        matrix.table = defaultdict(lambda: defaultdict(int))
+        for clue, clue_subtable in self.table.items():
+            for solution, weight in clue_subtable.items():
+                matrix.table[solution][clue] = weight        
+        return matrix

@@ -42,5 +42,4 @@ class Matrix_Base:
     #def get_association_score(self, w1, w2)
     #def get_min_association_score(self)
     #def get_max_association_score(matrix)
-    #def get_union_intersection(self, clues)
-    #def printAssociationMatrix(matrix_file_in, output_file)
+    #def get_solution_set(self, clues)

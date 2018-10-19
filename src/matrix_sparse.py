@@ -77,9 +77,8 @@ class Matrix_Sparse(Matrix_Base):
     def get_max_association_score(matrix):    
         return max(self.table.values())
 
-    def get_union_intersection(self, clues):
-        union_idx = None
-        intersection_idx = None
+    def get_solution_set(self, clues):
+        union_idx = set()
         for c in clues:
             i = self.get_word_index(c)
             if i is None:
@@ -88,20 +87,12 @@ class Matrix_Sparse(Matrix_Base):
             associated_word_indexes = non_zero_in_row[1]
             if len(associated_word_indexes)==0:
                 continue            
-            if union_idx is None:
-                union_idx = set(associated_word_indexes)
-                intersection_idx = set(associated_word_indexes)
-            else:
-                union_idx = union_idx.union(associated_word_indexes)
-                intersection_idx = intersection_idx.intersection(associated_word_indexes)        
+            union_idx.union(associated_word_indexes)
         union_lex = set([self.indexes_lex[i] for i in union_idx])
-        intersection_lex = set([self.indexes_lex[i] for i in intersection_idx])
         for c in clues:
             if c in union_lex:
                 union_lex.remove(c)
-            if c in intersection_lex:
-                intersection_lex.remove(c)
-        return union_lex, intersection_lex
+        return union_lex
 
 
  

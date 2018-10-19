@@ -52,6 +52,30 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
         print('Input clues: {}'.format(clues))     
 
     '''
+    # variant 1
+    clues_words = [w for c in clues for w in c.split()]
+    union = matrix.get_solution_set(clues_words)        
+    x_table = {}
+    for x in union:
+        association_scores = []        
+        for c in clues:
+            cw = c.split()
+            score = sum(
+                matrix.get_association_score(x, w, unfound_pair_score)
+                for w in cw
+            )
+            score = score / len(cw)
+            association_scores.append(score)
+        x_table[x] = {
+            'scores': association_scores,
+            'sum': sum(association_scores),
+            'clues_matched_info': ['X' if x!=unfound_pair_score else '_' for x in association_scores],
+            'clues_matched_count': sum([1 for x in association_scores if x!=unfound_pair_score])            
+        }    
+    # end of variant 1
+    '''
+
+    '''
     # variant 2
     x_table = {}
 
@@ -78,31 +102,11 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
             entry['clues_matched_count'] += 1
             entry['scores'][clue_index] = x_clue_score
             entry['sum'] += x_clue_score - unfound_pair_score
-            entry['clues_matched_info'][clue_index] = 'X'
-
+            entry['clues_matched_info'][clue_index] = 'X'    
 
     matrix.get_solutions_table(clues, update_x_table)        
     # end of variant 2
     '''
-
-    # variant 1
-    clues_words = [w for c in clues for w in c.split()]
-    union, intersection = matrix.get_union_intersection(clues_words)        
-    x_table = {}
-    for x in union:
-        association_scores = []        
-        for c in clues:
-            cw = c.split()
-            score = sum(matrix.get_association_score(x, w, unfound_pair_score) for w in cw)
-            score = score / len(cw)
-            association_scores.append(score)
-        x_table[x] = {
-            'scores': association_scores,
-            'sum': sum(association_scores),
-            'clues_matched_info': ['X' if x!=unfound_pair_score else '_' for x in association_scores],
-            'clues_matched_count': sum([1 for x in association_scores if x!=unfound_pair_score])            
-        }    
-    # end of variant 1
 
     # k[0] stand for alphabetical order (breaking tie with alphabetical order)
     sorted_x_table_groups = sorted(x_table.items(),key=lambda k:(-k[1]['clues_matched_count'],-k[1]['sum'], k[0]))
@@ -161,14 +165,14 @@ def read_game_set_tab(game_set_file):
             game_set.append(tokens)
     return game_set
 
-WORST_RANK_DEFAULT = -1
+WORST_SCORE = 'NA'
 
 def getSolutionRank(matrix, clues, solution, unfound_pair_score):    
     x_table, sorted_x_table_sum, sorted_x_table_groups = computeBestWordAssociation(matrix, clues, unfound_pair_score)    
     sorted_table_sum_keys = [i[0] for i in sorted_x_table_sum]
     sorted_table_groups_keys = [i[0] for i in sorted_x_table_groups]    
     if solution not in sorted_table_sum_keys:        
-        return WORST_RANK_DEFAULT, WORST_RANK_DEFAULT, 0, WORST_RANK_DEFAULT, [unfound_pair_score]*5, ['_']*5
+        return WORST_SCORE, WORST_SCORE, 0, WORST_SCORE, [unfound_pair_score]*5, ['_']*5
     abs_rank = sorted_table_sum_keys.index(solution)+1
     group_rank = sorted_table_groups_keys.index(solution)+1
     sorted_x_table_matched = {}    
@@ -200,14 +204,14 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
         eval_report = '\t'.join([str(x) for x in report_fields])
         #print(eval_report)
         eval_details.append(eval_report)
-        if abs_rank<=100:
+        if abs_rank!=WORST_SCORE and abs_rank<=100:
             MRR_score_abs_rank += 1./abs_rank
-        if group_rank<=100:
+        if group_rank!=WORST_SCORE and group_rank<=100:
             MRR_score_group_rank += 1./group_rank
         for t in kbest_list:
-            if abs_rank<=t:
+            if abs_rank!=WORST_SCORE and abs_rank<=t:
                 kbest_dict_abs_rank[t] += 1
-            if group_rank<=t:
+            if group_rank!=WORST_SCORE and group_rank<=t:
                 kbest_dict_group_rank[t] += 1
     total = len(game_set) 
     kbest_scores_abs_rank = sorted(kbest_dict_abs_rank.items())
@@ -229,8 +233,10 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
             print_write(f_out, '\n'.join(summary))
             print_write(f_out, '\n\nPosition Details:\n\n')
             print_write(f_out, '\n'.join(eval_details))
+            print_write(f_out, '\n\n')
     else:
         print('\n'.join(summary))
+        print('\n\n')
 
 def batch_solver(matrix, game_set_file, output_file, nBest=100, extra_search=False):
     import time
@@ -345,7 +351,7 @@ def interactive_solver(matrix):
             continue        
         abs_rank, group_rank, group, rank_in_group, scores, clues_matched_info = getSolutionRank(
             matrix, clues, solution, unfound_pair_score)
-        if abs_rank == WORST_RANK_DEFAULT:
+        if abs_rank == WORST_SCORE:
             print('La parola "{}" non è presente tra le migliori soluzioni\n'.format(solution))
             continue
         print("\nScores: " + ', '.join(['{0:.1f}'.format(s) for s in scores]))

@@ -45,9 +45,8 @@ class Matrix_Split():
                 if s not in clues:
                     update_x_table(x, i, s)
 
-    def get_union_intersection(self, clues):
-        union = None
-        intersection = None
+    def get_solution_set(self, clues):
+        union = set()
         word_rows = []
         for w in clues:
             pkl_file = self.get_pkl_file_path(w)
@@ -55,18 +54,8 @@ class Matrix_Split():
                 row = utility.loadObjFromPklFile(pkl_file)  
                 associated_words = row.keys()
                 word_rows.append(row)
-                if union is None:
-                    union = set(associated_words)
-                    intersection = set(associated_words)
-                else:
-                    union = union.union(associated_words)
-                    intersection = intersection.intersection(associated_words)
-        if union is None:
-            union = set()
-            intersection = set()
+                union = union.union(associated_words)
         for c in clues:
             if c in union:
                 union.remove(c)
-            if c in intersection:
-                intersection.remove(c)
-        return union, intersection
+        return union
