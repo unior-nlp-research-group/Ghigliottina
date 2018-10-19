@@ -47,13 +47,11 @@ class Matrix_Split():
 
     def get_solution_set(self, clues):
         union = set()
-        word_rows = []
-        for w in clues:
-            pkl_file = self.get_pkl_file_path(w)
+        for c in clues:
+            pkl_file = self.get_pkl_file_path(c)
             if os.path.isfile(pkl_file):
                 row = utility.loadObjFromPklFile(pkl_file)  
                 associated_words = row.keys()
-                word_rows.append(row)
                 union = union.union(associated_words)
         for c in clues:
             if c in union:

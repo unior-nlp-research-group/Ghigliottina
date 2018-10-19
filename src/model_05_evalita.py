@@ -16,7 +16,7 @@ import os
 ## MODEL 05 ALL CORPORA small lex
 ######################################
 
-OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_05_all_corpora_small_lex_dict/"
+OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_05_evalita/"
 
 LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq.txt"
 SOLUTION_LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq_solution.txt"
@@ -47,6 +47,9 @@ PROVERBI_WEIGHT = 100
 WIKI_IT_WEIGHT = 50
 COMPOUNDS_WEIGHT = 50
 
+LOWEST_SCORE = -8.254895446396917
+#LOWEST_SCORE = -8.69121046025845
+
 def build_and_eval():
     utility.make_dir(OUTPUT_DIR)
 
@@ -71,7 +74,7 @@ def build_and_eval():
     lexicon.printLexiconToFile(lex_solution_set, SOLUTION_LEX_FREQ_FILE)
 
     print('Computing lex coverage')
-    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, TEST_SET, COVERAGE_WORD_GAME100_FILE)
+    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
     
     print('Building association matrix')
     matrix = Matrix_Dict(lex_set, lex_solution_set)
@@ -85,18 +88,18 @@ def build_and_eval():
     corpora.addBigramFromCompunds(matrix, lex_set, min_len=4, weight=COMPOUNDS_WEIGHT)
     matrix.compute_association_scores()
     matrix.write_matrix_to_file(MATRIX_FILE)
+    
     print('Eval')
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, TEST_SET, EVAL_WORD_GAME100_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE) 
 
 def eval():
     from convert_xml import output_results
     print('Loading association matrix')
-    #unfound_score = -8.69121046025845
-    #matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, unfound_score)    
+    #matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, LOWEST_SCORE)    
     matrix = Matrix_Dict()
     matrix.read_matrix_from_file(MATRIX_FILE)
     #matrix.read_matrix_from_file(MATRIX_REVERSED_FILE)
-    print('Number of rows: {}'.format(matrix.size()))
+    #print('Number of rows: {}'.format(matrix.size()))
     print('Evaluating')
     
     
@@ -119,9 +122,9 @@ def eval():
     '''
 
     # GOLD SET
-    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_GOLD_TSV_v2_tv_FILE, EVAL_NLP4FUN_TEST_TV_FILE)
+    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_GOLD_TSV_v2_tv_FILE, EVAL_NLP4FUN_TEST_TV_FILE)
     #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_GOLD_TSV_v2_bg_FILE, EVAL_NLP4FUN_TEST_BG_FILE)
-    #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_GOLD_TSV_v2_ALL_FILE, EVAL_NLP4FUN_TEST_ALL_FILE)
+    scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_GOLD_TSV_v2_ALL_FILE, EVAL_NLP4FUN_TEST_ALL_FILE)
 
     # DEV + GOLD
     #scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.NLP4FUN_DEV_GOLD_TSV_ALL_FILE, EVAL_NLP4FUN_GOLD_TEST_ALL_FILE)
@@ -140,16 +143,14 @@ def correlation_score_match():
 
 def interactive_solver():
     print('Loading association matrix')
-    matrix = Matrix_Dict()
+    #matrix = Matrix_Dict()
     #matrix.read_matrix_from_file(MATRIX_FILE)
-    unfound_score = -8.69121046025845
-    matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, unfound_score)    
+    matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, LOWEST_SCORE)    
     scorer.interactive_solver(matrix)
 
 def get_pair_score(w1, w2):
-    unfound_score = -8.69121046025845
-    matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, unfound_score)    
-    return matrix.get_association_score(w1, w2, unfound_score)
+    matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, LOWEST_SCORE)    
+    return matrix.get_association_score(w1, w2, LOWEST_SCORE)
 
 def split_matrix():
     print('Loading association matrix')

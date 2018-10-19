@@ -10,7 +10,7 @@ class Matrix_Base:
         self.lex_set = lex_set
         self.lex_solution_set = lex_solution_set
         self.symmetric = lex_solution_set == lex_set
-        # non symmetric matrix -> keys are only those in lex_solution_set
+        # non symmetric matrix -> sub-keys are only those in lex_solution_set
 
     def add_patterns_from_corpus(self, corpus_info, weight=1):
         lines_extractor = corpora.extract_lines(corpus_info)
@@ -25,11 +25,11 @@ class Matrix_Base:
             self.increase_weight(w1,w2,weight)
             self.increase_weight(w2,w1,weight)            
         else:        
-            # non symmetric matrix -> keys are only those in lex_solution_set
+            # non symmetric matrix -> sub-keys are only those in lex_solution_set
             if w1 in self.lex_solution_set:
-                self.increase_weight(w1,w2,weight)
-            if w2 in self.lex_solution_set:
                 self.increase_weight(w2,w1,weight)
+            if w2 in self.lex_solution_set:
+                self.increase_weight(w1,w2,weight)
 
 
     ##################################  

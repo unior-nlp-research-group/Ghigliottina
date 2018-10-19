@@ -185,6 +185,7 @@ def getSolutionRank(matrix, clues, solution, unfound_pair_score):
     return abs_rank, group_rank, group, rank_in_group, scores, clues_matched_info
 
 def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):  
+    from utility import print_progress_bar
     unfound_pair_score = matrix.get_min_association_score()
     print("Min association score: {0:.1f}".format(unfound_pair_score)) 
     game_set = read_game_set_tab(game_set_file)
@@ -192,7 +193,8 @@ def evaluate_kbest_MeanReciprocalRank(matrix, game_set_file, output_file):
     kbest_dict_abs_rank, kbest_dict_group_rank = defaultdict(int), defaultdict(int)
     eval_details = []
     MRR_score_abs_rank, MRR_score_group_rank = 0, 0
-    for game_words in game_set:
+    for number,game_words in enumerate(game_set,1):
+        print_progress_bar(number, len(game_set))
         clues = game_words[:5]
         solution = game_words[5]
         abs_rank, group_rank, group, rank_in_group, scores, clues_matched_info = getSolutionRank(

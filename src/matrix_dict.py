@@ -55,7 +55,7 @@ class Matrix_Dict(Matrix_Base):
     def get_min_association_score(self):    
         return min(score for sub_table in self.table.values() for score in sub_table.values())
 
-    def get_max_association_score(matrix):    
+    def get_max_association_score(self):    
         return max(score for sub_table in self.table.values() for score in sub_table.values())
 
     def get_association_score(self, w1, w2, unfound_score):
@@ -66,9 +66,9 @@ class Matrix_Dict(Matrix_Base):
 
     def get_solution_set(self, clues):
         union = set()
-        for w in clues:
-            if w in self.table.keys():
-                row = self.table[w]
+        for c in clues:
+            if c in self.table.keys():
+                row = self.table[c]
                 associated_words = row.keys()
                 union = union.union(associated_words)
         for c in clues:
