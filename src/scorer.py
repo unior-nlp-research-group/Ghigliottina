@@ -51,7 +51,7 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
     if debug:
         print('Input clues: {}'.format(clues))     
 
-    #'''
+    '''
     # variant 1
     clues_words = [w for c in clues for w in c.split()]
     union = matrix.get_solution_set(clues_words)        
@@ -73,9 +73,9 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
             'clues_matched_count': sum([1 for x in association_scores if x!=unfound_pair_score])            
         }    
     # end of variant 1
-    #'''
-
     '''
+
+    #'''
     # variant 2
     x_table = {}
 
@@ -106,7 +106,7 @@ def computeBestWordAssociation(matrix, clues, unfound_pair_score, debug=False, n
 
     matrix.get_solutions_table(clues, update_x_table)        
     # end of variant 2
-    '''
+    #'''
 
     # k[0] stand for alphabetical order (breaking tie with alphabetical order)
     sorted_x_table_groups = sorted(x_table.items(),key=lambda k:(-k[1]['clues_matched_count'],-k[1]['sum'], k[0]))
