@@ -69,6 +69,8 @@ def get_clues_from_annotations(text_annotations):
         description = annotation['description']
         if re.match(r"[\d\.]+", description): # the price
             continue
+        if '\n' in description: # full image
+            continue
         #if description in ['Rai','Rai1','Rai1HD','HD']
         #    continue
         vertices = annotation['boundingPoly']['vertices']
@@ -79,7 +81,7 @@ def get_clues_from_annotations(text_annotations):
             'x': x,
             'y': y
         })
-    logging.info('VISION: detected text: {}'.format(', '.join(b['description'] for b in boxes)))
+    logging.info('VISION: detected text: {}'.format(', '.join(b['description'] for b in boxes)))    
 
     n = len(boxes)
     if n > 5:
@@ -131,5 +133,6 @@ def test_url():
     text_list = detect_clues(img_content)
     print(text_list)
     
-#if __name__ == "__main__":
-#    print(test_get_clues())
+# if __name__ == "__main__":
+#     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+#     print(test_get_clues())

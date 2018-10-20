@@ -192,18 +192,22 @@ def process_tweet_post(event_json):
     if sender_screen_name != key.TWITTER_BOT_SCREEN_NAME:          
         message_text = re.sub(r'(#|@)\w+','',message_text).strip()        
         reply_text, correct = solver.get_solution_from_text(message_text, from_twitter=True)
-        if not correct:
-            tweet_image_url = tweet_info.get('entities',{}).get('media',[{}])[0].get('media_url',None)
+        tweet_image_url = tweet_info.get('entities',{}).get('media',[{}])[0].get('media_url',None)
+        if not correct:            
             if tweet_image_url:
                 import vision
                 logging.info('TWITTER File_url: {}'.format(tweet_image_url))
                 clues_list = vision.detect_clues(image_uri=tweet_image_url)      
                 reply_text, correct = solver.get_solution_from_image_clues(clues_list, from_twitter=True)        
-        reply_text = '@{} {}'.format(sender_screen_name, reply_text)
-        if mentions_screen_name:
-            reply_text += ' ' + ' '.join(['@{}'.format(x) for x in mentions_screen_name])            
-        tweet_id = tweet_info['id']
-        post_retweet(reply_text, tweet_id)       
-        #sender_id = tweet_info['user']['id']     
-        #send_message(sender_id, reply_text)
-        logging.info('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))            
+        if correct or tweet_image_url:
+            reply_text = '@{} {}'.format(sender_screen_name, reply_text)
+            if mentions_screen_name:
+                reply_text += ' ' + ' '.join(['@{}'.format(x) for x in mentions_screen_name])            
+            tweet_id = tweet_info['id']
+            post_retweet(reply_text, tweet_id)       
+            #sender_id = tweet_info['user']['id']     
+            #send_message(sender_id, reply_text)
+            logging.info('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+        else:
+            send_message(sender_id, reply_text)
+            logging.info('IGNORED TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
