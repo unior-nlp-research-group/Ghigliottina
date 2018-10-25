@@ -205,9 +205,8 @@ def process_tweet_post(event_json):
                 reply_text += ' ' + ' '.join(['@{}'.format(x) for x in mentions_screen_name])            
             tweet_id = tweet_info['id']
             post_retweet(reply_text, tweet_id)       
-            #sender_id = tweet_info['user']['id']     
-            #send_message(sender_id, reply_text)
             logging.info('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         else:
+            sender_id = tweet_info['user']['id']     
             send_message(sender_id, reply_text)
             logging.info('IGNORED TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
