@@ -62,11 +62,11 @@ def average_confidence_solution(from_twitter, text, solution):
     solution = solution.upper()
     text = text.upper()
     if from_twitter:
-        reply = "🙄 Credo che la soluzione della #ghigliottina #leredita (per gli indizi {}) sia {}".format('{}',solution)
+        reply = "🤨 Credo che la soluzione della #ghigliottina #leredita (per gli indizi {}) sia {}".format('{}',solution)
         text = restrict_text_to_twitter_limit(reply, text)
         return reply.format(text)
     else:    
-        reply = "🙄 Credo che la soluzione della Ghigliottina per gli indizi *{}* sia *{}*."
+        reply = "🤨 Credo che la soluzione della Ghigliottina per gli indizi *{}* sia *{}*."
         return reply.format(text, solution)
 
 def low_confidence_solution(from_twitter, text, solution):

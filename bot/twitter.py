@@ -1,4 +1,4 @@
-import tweepy
+#import tweepy
 from TwitterAPI import TwitterAPI
 
 import key
@@ -20,19 +20,6 @@ def test():
     url = TWITTER_API_BASE + 'account_activity/all/:{}/webhooks'.format(key.TWITTER_ENVNAME)
     r = auth.get(url, auth=auth)
     return r.text
-
-
-
-def test_tweepy():
-    auth = tweepy.OAuthHandler(key.TWITTER_CUSUMER_API_KEY, key.TWITTER_CUSUMER_API_SECRET)
-    auth.set_access_token(key.TWITTER_ACCESS_TOKEN, key.TWITTER_ACCESS_TOKEN_SECRET)
-
-    tweepy_api = tweepy.API(auth)
-
-    public_tweets = tweepy_api.home_timeline()
-
-    for tweet in public_tweets:
-        print(tweet.text)
 
 # https://developer.twitter.com/en/docs/accounts-and-users/subscribe-account-activity/guides/managing-webhooks-and-subscriptions
 

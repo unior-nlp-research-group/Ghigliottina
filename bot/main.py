@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, Response, request, jsonify
-
 import key
-import telegram_bot
-import twitter
-import json
-import ui
 
 import logging
-import google.cloud.logging
-client = google.cloud.logging.Client()
-client.setup_logging(log_level=logging.INFO) #logging.INFO #format='%(asctime)s  [%(levelname)s]: %(message)s'
 
+
+# If `entrypoint` is not defined in app.yaml, App Engine will look for an app
+# called `app` in `main.py`.
 app = Flask(__name__)
 
 @app.route('/')
@@ -35,6 +30,8 @@ def bad_request():
 
 @app.route(key.WEBKOOK_TELEGRAM_ROUTING, methods=['POST'])
 def telegram_webhook_handler():
+    import telegram_bot
+    import json
     request_json = request.get_json(force=True)
 
     logging.info("TELEGRAM POST REQUEST: {}".format(json.dumps(request_json)))
@@ -45,8 +42,9 @@ def telegram_webhook_handler():
 
 @app.route(key.WEBKOOK_TWITTER_ROUTING, methods=['GET'])
 def twitter_webhook_challenger():
-
+    from twitter import solve_crc_challenge
     logging.info("in twitter_webhook_challenger function")
+    #import telegram_bot
     #telegram_bot.report_master("call to twitter_webhook_challenger")
     
     crc_token = request.args.get('crc_token')
@@ -55,15 +53,16 @@ def twitter_webhook_challenger():
 
     # construct response data with base64 encoded hash
     reponse_json = {
-        'response_token': twitter.solve_crc_challenge(crc_token),
+        'response_token': solve_crc_challenge(crc_token),
     }
 
     return jsonify(reponse_json)
 
 @app.route(key.WEBKOOK_TWITTER_ROUTING, methods=['POST'])
 def twitter_webhook_handler():    
+    import twitter
+    import json
     event_json = request.get_json()
     logging.info("TWITTER POST REQUEST: {}".format(json.dumps(event_json)))
     twitter.deal_with_event(event_json)
     return 'ok'
-
