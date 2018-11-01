@@ -6,6 +6,7 @@ import ui
 import solver
 from exception_handler import exception_reporter
 import logging
+import ndb_person
 
 TELEGRAM_BOT = telegram.Bot(token=key.TELEGRAM_API_TOKEN)
 
@@ -31,11 +32,14 @@ https://python-telegram-bot.readthedocs.io/en/stable/
 def deal_with_request(request_json):
     # retrieve the message in JSON and then transform it to Telegram object
     update_obj = telegram.Update.de_json(request_json, TELEGRAM_BOT)
-
-    message_obj = update_obj.message
-
-    chat_id = message_obj.chat.id
-
+    message_obj = update_obj.message    
+    user = message_obj.from_user
+    chat_id = user.id
+    first_name = user.first_name
+    last_name = user.last_name
+    username = user.username
+    ndb_person.register_person('telegram', chat_id, first_name, last_name, username)
+    
     if message_obj.text:
         deal_with_text_request(chat_id, message_obj.text)
     elif message_obj.photo:
@@ -43,7 +47,7 @@ def deal_with_request(request_json):
     elif message_obj.document:
         deal_with_document_request(chat_id, message_obj.document)
     else:
-        logging.info('TELEGRAM: no text of photo in request')
+        logging.debug('TELEGRAM: no text of photo in request')
         return
 
 
@@ -73,11 +77,11 @@ def deal_with_text_request(chat_id, text):
     else:
         reply_text, _ = solver.get_solution_from_text(text,from_twitter=False)    
     send_message(chat_id, reply_text)    
-    logging.info('TELEGRAM Reply to message from @{} with text {} -> {}'.format(chat_id, text, reply_text))            
+    logging.debug('TELEGRAM Reply to message from @{} with text {} -> {}'.format(chat_id, text, reply_text))            
 
 def get_url_from_file_id(file_id):
     import requests
-    logging.info("TELEGRAM: Requested file_id: {}".format(file_id))
+    logging.debug("TELEGRAM: Requested file_id: {}".format(file_id))
     r = requests.post(key.DIALECT_API_URL + 'getFile', data={'file_id': file_id})
     r_json = r.json()
     if 'result' not in r_json or 'file_path' not in r_json['result']:
@@ -91,12 +95,12 @@ def deal_with_photo_request(chat_id, photo_list):
     photo_size = photo_list[-1] # last one is the biggest
     file_url_suffix = get_url_from_file_id(photo_size.file_id)
     file_url = key.DIALECT_API_URL_FILE + file_url_suffix
-    logging.info('TELEGRAM File_url: {}'.format(file_url))
+    logging.debug('TELEGRAM File_url: {}'.format(file_url))
     image_content = vision.get_image_content_by_uri(file_url)        
     clues_list = vision.detect_clues(image_content=image_content)
     reply_text, _ = solver.get_solution_from_image_clues(clues_list, from_twitter=False)
     send_message(chat_id, reply_text)    
-    logging.info('TELEGRAM Reply to message from @{} with photo_url {} -> {}'.format(chat_id, file_url, reply_text))            
+    logging.debug('TELEGRAM Reply to message from @{} with photo_url {} -> {}'.format(chat_id, file_url, reply_text))            
 
 def deal_with_document_request(chat_id, document_obj):
     text = "Mandami l'immagine come *photo* e non come documento."

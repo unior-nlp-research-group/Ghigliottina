@@ -154,8 +154,8 @@ def deal_with_event(event_json):
     if 'direct_message_events' in event_json:
         process_direct_message(event_json)
     elif 'tweet_create_events' in event_json:
-        if 'retweeted_status' not in event_json:
-            process_tweet_post(event_json)        
+        process_tweet_post(event_json)                
+            
 
 def process_direct_message(event_json):
     message_info = event_json['direct_message_events'][0]['message_create']
@@ -164,11 +164,14 @@ def process_direct_message(event_json):
     if sender_id != key.TWITTER_BOT_ID:
         message_text = message_info['message_data']['text']
         reply_text, _ = solver.get_solution_from_text(message_text, from_twitter=True)
-        logging.info('TWITTER Reply to direct message from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+        logging.debug('TWITTER Reply to direct message from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         send_message(sender_id, reply_text)
 
-def process_tweet_post(event_json):
+def process_tweet_post(event_json):    
     tweet_info = event_json['tweet_create_events'][0]
+    if 'retweeted_status' in tweet_info:
+        logging.debug('Retweet detected')
+        return
     message_text = tweet_info['text']
     sender_screen_name = tweet_info['user']['screen_name']            
     mentions_screen_name = [
@@ -183,7 +186,7 @@ def process_tweet_post(event_json):
         if not correct:            
             if tweet_image_url:
                 import vision
-                logging.info('TWITTER File_url: {}'.format(tweet_image_url))
+                logging.debug('TWITTER File_url: {}'.format(tweet_image_url))
                 clues_list = vision.detect_clues(image_uri=tweet_image_url)      
                 reply_text, correct = solver.get_solution_from_image_clues(clues_list, from_twitter=True)        
         if correct or tweet_image_url:
@@ -192,8 +195,8 @@ def process_tweet_post(event_json):
                 reply_text += ' ' + ' '.join(['@{}'.format(x) for x in mentions_screen_name])            
             tweet_id = tweet_info['id']
             post_retweet(reply_text, tweet_id)       
-            logging.info('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+            logging.debug('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         else:
             sender_id = tweet_info['user']['id']     
             send_message(sender_id, reply_text)
-            logging.info('IGNORED TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+            logging.debug('IGNORED TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))

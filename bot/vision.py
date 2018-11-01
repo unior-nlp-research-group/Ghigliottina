@@ -2,8 +2,10 @@ import requests
 import json
 import base64
 from key import GOOGLE_VISION_API_KEY
-import logging
 import re
+
+import logging
+
 
 '''
 Google Vision API request documentation
@@ -52,12 +54,12 @@ def detect_clues(image_content=None, image_uri=None):
     )    
 
     result_json = response.json()
-    logging.info('detect_clues response: {}'.format(result_json))
+    logging.debug('detect_clues response: {}'.format(result_json))
     text_annotations = result_json.get('responses',[{}])[0].get('textAnnotations', None)
     if text_annotations:
         clues = get_clues_from_annotations(text_annotations)
         clues_csv = ', '.join(clues)
-        logging.info('VISION: {} detected clues: {}'.format(len(clues), clues_csv))
+        logging.debug('VISION: {} detected clues: {}'.format(len(clues), clues_csv))
         return clues
     return []
 
@@ -81,7 +83,7 @@ def get_clues_from_annotations(text_annotations):
             'x': x,
             'y': y
         })
-    logging.info('VISION: detected text: {}'.format(', '.join(b['description'] for b in boxes)))    
+    logging.debug('VISION: detected text: {}'.format(', '.join(b['description'] for b in boxes)))    
 
     n = len(boxes)
     if n > 5:
