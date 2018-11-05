@@ -13,6 +13,8 @@ from parameters import TWITTER_API_BASE
 import logging
 import ui
 
+from ndb_user import NDB_User
+
 def test():
     auth = OAuth1Session(
         key.TWITTER_CUSUMER_API_KEY, key.TWITTER_CUSUMER_API_SECRET,
@@ -117,11 +119,17 @@ def solve_crc_challenge(crc_token):
     return 'sha256=' + base64.b64encode(sha256_hash_digest).decode('utf-8')
 
 
-def get_user_id(screen_name):
-        r = api.request('users/lookup', {'screen_name':screen_name})
-        if r.status_code == 200:
-            return r.json()[0]['id']
-        return None
+def get_user_info(key, value):
+    assert key in ['user_id', 'screen_name']
+    r = api.request('users/lookup', {key:value})
+    if r.status_code == 200:
+        user_info = r.json()
+        return {
+            'user_id': user_info[0]['id'],
+            'screen_name': user_info[0]['screen_name'],
+            'name': user_info[0]['name'],
+        }
+    return {}
 
 def send_message(user_id, message_text):
 
@@ -154,46 +162,57 @@ def deal_with_event(event_json):
     if 'direct_message_events' in event_json:
         process_direct_message(event_json)
     elif 'tweet_create_events' in event_json:
-        if 'retweeted_status' not in event_json:
-            process_tweet_post(event_json)        
+        process_tweet_post(event_json)                
+            
 
 def process_direct_message(event_json):
     message_info = event_json['direct_message_events'][0]['message_create']
-    sender_id = message_info['sender_id']
-    sender_screen_name = event_json['users'][sender_id]['screen_name']
+    sender_id = message_info['sender_id']    
     if sender_id != key.TWITTER_BOT_ID:
+        logging.debug("TWITTER DIRECT MESSAGE: {}".format(json.dumps(event_json)))
+        sender_screen_name = event_json['users'][sender_id]['screen_name']
+        sender_name = get_user_info('user_id', sender_id).get('name', None)
+        user = NDB_User('twitter', sender_id, name=sender_name, username=sender_screen_name)
         message_text = message_info['message_data']['text']
-        reply_text, _ = solver.get_solution_from_text(message_text, from_twitter=True)
-        logging.info('TWITTER Reply to direct message from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+        reply_text, _ = solver.get_solution(user, message_text)
+        logging.debug('TWITTER Reply to direct message from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         send_message(sender_id, reply_text)
 
-def process_tweet_post(event_json):
+def process_tweet_post(event_json):    
     tweet_info = event_json['tweet_create_events'][0]
+    if 'retweeted_status' in tweet_info:
+        logging.debug('Retweet detected')
+        return
     message_text = tweet_info['text']
-    sender_screen_name = tweet_info['user']['screen_name']            
+    user_info = tweet_info['user']
+    sender_screen_name = user_info['screen_name']
     mentions_screen_name = [
         x['screen_name'] 
         for x in tweet_info['entities']['user_mentions'] 
         if x['screen_name']!=key.TWITTER_BOT_SCREEN_NAME
     ]
-    if sender_screen_name != key.TWITTER_BOT_SCREEN_NAME:          
+    if sender_screen_name != key.TWITTER_BOT_SCREEN_NAME:  
+        logging.debug("TWITTER POST REQUEST: {}".format(json.dumps(event_json)))
+        sender_id = user_info['id']
+        sender_name = user_info['name']
+        user = NDB_User('twitter', sender_id, name=sender_name, username=sender_screen_name)
         message_text = re.sub(r'(#|@)\w+','',message_text).strip()        
-        reply_text, correct = solver.get_solution_from_text(message_text, from_twitter=True)
+        reply_text, correct = solver.get_solution(user, message_text)
         tweet_image_url = tweet_info.get('entities',{}).get('media',[{}])[0].get('media_url',None)
         if not correct:            
             if tweet_image_url:
                 import vision
-                logging.info('TWITTER File_url: {}'.format(tweet_image_url))
+                logging.debug('TWITTER deteceted image. File_url: {}'.format(tweet_image_url))
                 clues_list = vision.detect_clues(image_uri=tweet_image_url)      
-                reply_text, correct = solver.get_solution_from_image_clues(clues_list, from_twitter=True)        
+                reply_text, correct = solver.get_solution_from_image(user, clues_list)        
         if correct or tweet_image_url:
             reply_text = '@{} {}'.format(sender_screen_name, reply_text)
             if mentions_screen_name:
                 reply_text += ' ' + ' '.join(['@{}'.format(x) for x in mentions_screen_name])            
             tweet_id = tweet_info['id']
             post_retweet(reply_text, tweet_id)       
-            logging.info('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+            logging.debug('TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         else:
             sender_id = tweet_info['user']['id']     
             send_message(sender_id, reply_text)
-            logging.info('IGNORED TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
+            logging.debug('IGNORED TWITTER Reply to tweet from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))

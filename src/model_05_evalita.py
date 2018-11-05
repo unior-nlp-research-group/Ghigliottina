@@ -176,9 +176,9 @@ def reverse_matrix():
 
 if __name__=='__main__':  
     #build_and_eval()
-    #interactive_solver()
+    interactive_solver()
     #correlation_score_match()
-    eval()
+    #eval()
     #split_matrix()  
     #print_row_column_sets()
     #reverse_matrix()
