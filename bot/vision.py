@@ -76,6 +76,8 @@ def get_clues_from_annotations(text_annotations):
         #if description in ['Rai','Rai1','Rai1HD','HD']
         #    continue
         vertices = annotation['boundingPoly']['vertices']
+        if len(vertices[0])!=2 or len(vertices[1])!=2:
+            continue
         x = vertices[0]['x'] + round((vertices[1]['x'] - vertices[0]['x'])/2)
         y = vertices[0]['y']
         boxes.append({
@@ -136,5 +138,5 @@ def test_url():
     print(text_list)
     
 # if __name__ == "__main__":
-#     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-#     print(test_get_clues())
+#      logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+#      print(test_get_clues())

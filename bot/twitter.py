@@ -13,6 +13,8 @@ from parameters import TWITTER_API_BASE
 import logging
 import ui
 
+import ndb_user
+
 def test():
     auth = OAuth1Session(
         key.TWITTER_CUSUMER_API_KEY, key.TWITTER_CUSUMER_API_SECRET,
@@ -162,8 +164,10 @@ def process_direct_message(event_json):
     sender_id = message_info['sender_id']
     sender_screen_name = event_json['users'][sender_id]['screen_name']
     if sender_id != key.TWITTER_BOT_ID:
+        logging.debug("TWITTER DIRECT MESSAGE: {}".format(json.dumps(event_json)))
+        #user = ndb_user.register_user('twitter', sender_id, first_name=None, last_name=None, username=sender_screen_name)
         message_text = message_info['message_data']['text']
-        reply_text, _ = solver.get_solution_from_text(message_text, from_twitter=True)
+        reply_text, _ = solver.get_solution(message_text, from_twitter=True)
         logging.debug('TWITTER Reply to direct message from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         send_message(sender_id, reply_text)
 
@@ -179,14 +183,16 @@ def process_tweet_post(event_json):
         for x in tweet_info['entities']['user_mentions'] 
         if x['screen_name']!=key.TWITTER_BOT_SCREEN_NAME
     ]
-    if sender_screen_name != key.TWITTER_BOT_SCREEN_NAME:          
+    if sender_screen_name != key.TWITTER_BOT_SCREEN_NAME:  
+        logging.debug("TWITTER POST REQUEST: {}".format(json.dumps(event_json)))
+        #user = ndb_user.register_user('twitter', sender_id, first_name=None, last_name=None, username=sender_screen_name)        
         message_text = re.sub(r'(#|@)\w+','',message_text).strip()        
-        reply_text, correct = solver.get_solution_from_text(message_text, from_twitter=True)
+        reply_text, correct = solver.get_solution(message_text, from_twitter=True)
         tweet_image_url = tweet_info.get('entities',{}).get('media',[{}])[0].get('media_url',None)
         if not correct:            
             if tweet_image_url:
                 import vision
-                logging.debug('TWITTER File_url: {}'.format(tweet_image_url))
+                logging.debug('TWITTER deteceted image. File_url: {}'.format(tweet_image_url))
                 clues_list = vision.detect_clues(image_uri=tweet_image_url)      
                 reply_text, correct = solver.get_solution_from_image_clues(clues_list, from_twitter=True)        
         if correct or tweet_image_url:

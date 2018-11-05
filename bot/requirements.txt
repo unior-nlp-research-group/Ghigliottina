@@ -1,8 +1,8 @@
 Flask==1.0.2
-google-cloud-storage==1.10.0
-google-cloud-logging==1.7.0
+google-cloud-storage==1.13.0
+google-cloud-logging==1.8.0
+google-cloud-datastore==1.7.1
 # gunicorn==19.9.0
 requests==2.19.1
 python-telegram-bot==11.1.0
 TwitterAPI==2.5.4
-google-api-python-client==1.7.4

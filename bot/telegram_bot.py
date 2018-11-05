@@ -6,7 +6,7 @@ import ui
 import solver
 from exception_handler import exception_reporter
 import logging
-import ndb_person
+from ndb_user import NDB_User
 
 TELEGRAM_BOT = telegram.Bot(token=key.TELEGRAM_API_TOKEN)
 
@@ -38,14 +38,14 @@ def deal_with_request(request_json):
     first_name = user.first_name
     last_name = user.last_name
     username = user.username
-    ndb_person.register_person('telegram', chat_id, first_name, last_name, username)
+    user = NDB_User('telegram', chat_id, first_name, last_name, username)
     
     if message_obj.text:
-        deal_with_text_request(chat_id, message_obj.text)
+        deal_with_text_request(user, message_obj.text)
     elif message_obj.photo:
-        deal_with_photo_request(chat_id, message_obj.photo)
+        deal_with_photo_request(user, message_obj.photo)
     elif message_obj.document:
-        deal_with_document_request(chat_id, message_obj.document)
+        deal_with_document_request(user, message_obj.document)
     else:
         logging.debug('TELEGRAM: no text of photo in request')
         return
@@ -54,32 +54,34 @@ def deal_with_request(request_json):
 DEFAULT_KEYBOARD = [[ui.BUTTON_INFO]]
 DEFAULT_REPLY_MARKUP = telegram.ReplyKeyboardMarkup(DEFAULT_KEYBOARD, resize_keyboard=True)
 
-def send_message(chat_id, text, markdown=True):
+def send_message(user, text, markdown=True):
+    chat_id = user.serial_number
     if markdown:
         TELEGRAM_BOT.sendMessage(
-            chat_id=chat_id, 
-            text=text,
-            parse_mode=telegram.ParseMode.MARKDOWN,
-            reply_markup=DEFAULT_REPLY_MARKUP
+            chat_id = chat_id, 
+            text = text,
+            parse_mode = telegram.ParseMode.MARKDOWN,
+            reply_markup = DEFAULT_REPLY_MARKUP
         )
     else:
         TELEGRAM_BOT.sendMessage(
-            chat_id=chat_id,          
-            text=text,
-            reply_markup=DEFAULT_REPLY_MARKUP
+            chat_id = chat_id,          
+            text = text,
+            reply_markup = DEFAULT_REPLY_MARKUP
         )
     
-def deal_with_text_request(chat_id, text):
+def deal_with_text_request(user, text):
+    chat_id = user.serial_number
     if text in ['/start', '/help', ui.BUTTON_INFO]:
         reply_text = ui.intro(from_twitter=False)
     elif text == '/exception':
         1/0
     else:
-        reply_text, _ = solver.get_solution_from_text(text,from_twitter=False)    
+        reply_text, _ = solver.get_solution(text,from_twitter=False)    
     send_message(chat_id, reply_text)    
     logging.debug('TELEGRAM Reply to message from @{} with text {} -> {}'.format(chat_id, text, reply_text))            
 
-def get_url_from_file_id(file_id):
+def get_url_from_file_id(file_id):    
     import requests
     logging.debug("TELEGRAM: Requested file_id: {}".format(file_id))
     r = requests.post(key.DIALECT_API_URL + 'getFile', data={'file_id': file_id})
@@ -90,8 +92,9 @@ def get_url_from_file_id(file_id):
     file_url = r_json['result']['file_path']
     return file_url
 
-def deal_with_photo_request(chat_id, photo_list):
+def deal_with_photo_request(user, photo_list):
     import vision
+    chat_id = user.serial_number    
     photo_size = photo_list[-1] # last one is the biggest
     file_url_suffix = get_url_from_file_id(photo_size.file_id)
     file_url = key.DIALECT_API_URL_FILE + file_url_suffix
@@ -100,11 +103,11 @@ def deal_with_photo_request(chat_id, photo_list):
     clues_list = vision.detect_clues(image_content=image_content)
     reply_text, _ = solver.get_solution_from_image_clues(clues_list, from_twitter=False)
     send_message(chat_id, reply_text)    
-    logging.debug('TELEGRAM Reply to message from @{} with photo_url {} -> {}'.format(chat_id, file_url, reply_text))            
+    logging.debug('TELEGRAM Reply to message from id={} with photo_url {} -> {}'.format(chat_id, file_url, reply_text))            
 
-def deal_with_document_request(chat_id, document_obj):
+def deal_with_document_request(user, document_obj):
     text = "Mandami l'immagine come *photo* e non come documento."
-    send_message(key.TELEGRAM_BOT_MASTER_ID, text)    
+    send_message(user.serial_number, text)    
 
 def report_master(error_message):
     send_message(key.TELEGRAM_BOT_MASTER_ID, error_message, markdown=False)    

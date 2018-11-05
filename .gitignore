@@ -1,6 +1,6 @@
-bot/credentials
 vision_test.json
 .gcloudignore
-bot/env
 .vscode/
+bot/credentials
 bot/.vscode/
+bot/env

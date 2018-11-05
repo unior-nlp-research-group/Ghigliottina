@@ -66,7 +66,6 @@ def twitter_webhook_challenger():
 def twitter_webhook_handler():    
     import twitter
     import json
-    event_json = request.get_json()
-    logging.debug("TWITTER POST REQUEST: {}".format(json.dumps(event_json)))
+    event_json = request.get_json()    
     twitter.deal_with_event(event_json)
     return 'ok'

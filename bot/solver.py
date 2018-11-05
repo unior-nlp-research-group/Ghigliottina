@@ -2,21 +2,22 @@
 
 from parameters import UNFOUND_PAIR_SCORE, HIGH_CONFIDENCE_SCORE, GOOD_CONFIDENCE_SCORE, AVERAGE_CONFIDENCE_SCORE
 import ui
+import logging
 
 def tokenize_clues(text):
     return [x.strip() for x in text.split(',')] if ',' in text else text.split()
 
+
 def get_solution_from_image_clues(clues_list, from_twitter):
     if len(clues_list)==5:
         clues_list_str = ','.join(clues_list)
-        reply_text, correct = get_solution_from_text(clues_list_str, from_twitter=from_twitter)    
-        return reply_text, correct
+        reply_text, correct = get_solution(clues_list_str, from_twitter=from_twitter)    
+        return reply_text, correct        
     else:
         return ui.getImgProblemText(), False
-
     
 
-def get_solution_from_text(text, from_twitter):
+def get_solution(text, from_twitter):
 
     text = text.lower()
 
@@ -30,6 +31,7 @@ def get_solution_from_text(text, from_twitter):
     
     if len(clues)!=5:
         reply_text = ui.wrong_input(from_twitter, text)
+        logging.debug('No 5 clues detected: {}'.format(clues))
         return reply_text, False
 
     x_table = {}
@@ -74,4 +76,5 @@ def get_solution_from_text(text, from_twitter):
     else:
         reply_text = ui.low_confidence_solution(from_twitter, clues_str, best_solution)
     
+    logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))
     return reply_text, True
