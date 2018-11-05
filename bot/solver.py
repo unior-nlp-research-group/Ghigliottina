@@ -61,24 +61,43 @@ def get_solution(user, text):
             if s not in clues:
                 update_x_table(x, i, s)
 
-    sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
-    
+        
     clues_str = ', '.join(clues)
-    if len(sorted_x_table_sum)==0:
+    if len(x_table)==0:
         reply_text = ui.no_solution_found(from_twitter, clues_str)
         NDB_Ghigliottina(user, clues, None)
         return reply_text, True
-    best_solution, scores_table = sorted_x_table_sum[0]
-    score_sum = scores_table['sum']
-    if score_sum > HIGH_CONFIDENCE_SCORE:
-        reply_text = ui.high_confidence_solution(from_twitter, clues_str, best_solution)
-    if score_sum > GOOD_CONFIDENCE_SCORE:
-        reply_text = ui.good_confidence_solution(from_twitter, clues_str, best_solution)
-    if score_sum > AVERAGE_CONFIDENCE_SCORE:
-        reply_text = ui.average_confidence_solution(from_twitter, clues_str, best_solution)
-    else:
-        reply_text = ui.low_confidence_solution(from_twitter, clues_str, best_solution)
     
-    logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))
-    NDB_Ghigliottina(user, clues, best_solution)
-    return reply_text, True
+    sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
+    if user.debug:
+        result = []
+        for s in [5,4,3]:
+            result.append('\n-------------------------------------')
+            result.append('Best of {}'.format(s))
+            result.append('-------------------------------------')
+            sorted_x_table_set = [x for x in sorted_x_table_sum if x[1]['clues_matched_count'] == s]
+            for key,value in sorted_x_table_set[:5]:
+                scores = ', '.join(['{0:.1f}'.format(s) for s in value['scores']])
+                scores_sum = '{0:.1f}'.format(value['sum'])
+                result.append('{}: {} -> sum({}) = {}'.format(key,value['clues_matched_count'], scores, scores_sum))
+        reply_text = '```' + '\n'.join(result) + '\n```'
+        return reply_text, True
+    else:
+        best_solution, scores_table = sorted_x_table_sum[0]
+        score_sum = scores_table['sum']
+        if score_sum > HIGH_CONFIDENCE_SCORE:
+            reply_text = ui.high_confidence_solution(from_twitter, clues_str, best_solution)
+        if score_sum > GOOD_CONFIDENCE_SCORE:
+            reply_text = ui.good_confidence_solution(from_twitter, clues_str, best_solution)
+        if score_sum > AVERAGE_CONFIDENCE_SCORE:
+            reply_text = ui.average_confidence_solution(from_twitter, clues_str, best_solution)
+        else:
+            reply_text = ui.low_confidence_solution(from_twitter, clues_str, best_solution)
+        
+        logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))
+        NDB_Ghigliottina(user, clues, best_solution)
+        return reply_text, True
+
+# if __name__ == "__main__":
+#      reply_text, success = get_solution(None, "oro argento previsione colazione punta", debug=True)
+#      print(reply_text)

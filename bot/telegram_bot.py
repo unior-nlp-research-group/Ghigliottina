@@ -71,10 +71,20 @@ def send_message(user, text, markdown=True):
 def deal_with_text_request(user, text):
     if text in ['/start', '/help', ui.BUTTON_INFO]:
         reply_text = ui.intro(from_twitter=False)
-    elif text == '/exception':
+        send_message(user, reply_text)    
+        return
+    if text == '/exception':
         1/0
-    else:
-        reply_text, _ = solver.get_solution(user, text)    
+        return
+    if text.startswith('/debug') and ' ' in text:
+        on_off = text.lower().split()[1]
+        if on_off in ['on','off']:
+            user.debug = on_off == 'on'
+            user.put()
+            msg = "Debug attivato" if user.debug else "Debug disattivato"
+            send_message(user, msg)    
+            return        
+    reply_text, _ = solver.get_solution(user, text)    
     send_message(user, reply_text)    
     logging.debug('TELEGRAM Reply to message from @{} with text {} -> {}'.format(user.serial_number, text, reply_text))            
 
