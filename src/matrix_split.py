@@ -42,7 +42,7 @@ class Matrix_Split():
             if clue_subtable is None:
                 continue
             for x,s in clue_subtable.items():
-                if s not in clues:
+                if x not in clues:
                     update_x_table(x, i, s)
 
     def get_solution_set(self, clues):

@@ -58,7 +58,7 @@ def get_solution(user, text):
         if clue_subtable is None:
             continue
         for x,s in clue_subtable.items():
-            if s not in clues:
+            if x not in clues:
                 update_x_table(x, i, s)
 
         
@@ -69,6 +69,8 @@ def get_solution(user, text):
         return reply_text, True
     
     sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
+    best_solution, scores_table = sorted_x_table_sum[0]
+    NDB_Ghigliottina(user, clues, best_solution)
     if user.debug:
         result = []
         for s in [5,4,3]:
@@ -82,8 +84,7 @@ def get_solution(user, text):
                 result.append('{}: {} -> sum({}) = {}'.format(key,value['clues_matched_count'], scores, scores_sum))
         reply_text = '```' + '\n'.join(result) + '\n```'
         return reply_text, True
-    else:
-        best_solution, scores_table = sorted_x_table_sum[0]
+    else:        
         score_sum = scores_table['sum']
         if score_sum > HIGH_CONFIDENCE_SCORE:
             reply_text = ui.high_confidence_solution(from_twitter, clues_str, best_solution)
@@ -94,10 +95,9 @@ def get_solution(user, text):
         else:
             reply_text = ui.low_confidence_solution(from_twitter, clues_str, best_solution)
         
-        logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))
-        NDB_Ghigliottina(user, clues, best_solution)
+        logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))        
         return reply_text, True
 
-# if __name__ == "__main__":
-#      reply_text, success = get_solution(None, "oro argento previsione colazione punta", debug=True)
-#      print(reply_text)
+if __name__ == "__main__":
+     reply_text, success = get_solution(None, "giardino lago foresta legge elefante", debug=True)
+     print(reply_text)
