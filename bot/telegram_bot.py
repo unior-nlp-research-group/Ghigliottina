@@ -33,12 +33,11 @@ def deal_with_request(request_json):
     # retrieve the message in JSON and then transform it to Telegram object
     update_obj = telegram.Update.de_json(request_json, TELEGRAM_BOT)
     message_obj = update_obj.message    
-    user = message_obj.from_user
-    chat_id = user.id
-    first_name = user.first_name
-    last_name = user.last_name
-    username = user.username
-    user = NDB_User('telegram', chat_id, first_name, last_name, username)
+    user_obj = message_obj.from_user
+    name = user_obj.first_name
+    if user_obj.last_name:
+        name += ' ' + user_obj.last_name
+    user = NDB_User('telegram', user_obj.id, name, user_obj.username)
     
     if message_obj.text:
         deal_with_text_request(user, message_obj.text)
@@ -55,31 +54,29 @@ DEFAULT_KEYBOARD = [[ui.BUTTON_INFO]]
 DEFAULT_REPLY_MARKUP = telegram.ReplyKeyboardMarkup(DEFAULT_KEYBOARD, resize_keyboard=True)
 
 def send_message(user, text, markdown=True):
-    chat_id = user.serial_number
     if markdown:
         TELEGRAM_BOT.sendMessage(
-            chat_id = chat_id, 
+            chat_id = user.serial_number, 
             text = text,
             parse_mode = telegram.ParseMode.MARKDOWN,
             reply_markup = DEFAULT_REPLY_MARKUP
         )
     else:
         TELEGRAM_BOT.sendMessage(
-            chat_id = chat_id,          
+            chat_id = user.serial_number,          
             text = text,
             reply_markup = DEFAULT_REPLY_MARKUP
         )
     
 def deal_with_text_request(user, text):
-    chat_id = user.serial_number
     if text in ['/start', '/help', ui.BUTTON_INFO]:
         reply_text = ui.intro(from_twitter=False)
     elif text == '/exception':
         1/0
     else:
-        reply_text, _ = solver.get_solution(text,from_twitter=False)    
-    send_message(chat_id, reply_text)    
-    logging.debug('TELEGRAM Reply to message from @{} with text {} -> {}'.format(chat_id, text, reply_text))            
+        reply_text, _ = solver.get_solution(user, text)    
+    send_message(user, reply_text)    
+    logging.debug('TELEGRAM Reply to message from @{} with text {} -> {}'.format(user.serial_number, text, reply_text))            
 
 def get_url_from_file_id(file_id):    
     import requests
@@ -94,20 +91,24 @@ def get_url_from_file_id(file_id):
 
 def deal_with_photo_request(user, photo_list):
     import vision
-    chat_id = user.serial_number    
     photo_size = photo_list[-1] # last one is the biggest
     file_url_suffix = get_url_from_file_id(photo_size.file_id)
     file_url = key.DIALECT_API_URL_FILE + file_url_suffix
     logging.debug('TELEGRAM File_url: {}'.format(file_url))
     image_content = vision.get_image_content_by_uri(file_url)        
     clues_list = vision.detect_clues(image_content=image_content)
-    reply_text, _ = solver.get_solution_from_image_clues(clues_list, from_twitter=False)
-    send_message(chat_id, reply_text)    
-    logging.debug('TELEGRAM Reply to message from id={} with photo_url {} -> {}'.format(chat_id, file_url, reply_text))            
+    reply_text, _ = solver.get_solution_from_image(user, clues_list)
+    send_message(user, reply_text)    
+    logging.debug('TELEGRAM Reply to message from id={} with photo_url {} -> {}'.format(user.serial_number, file_url, reply_text))            
 
 def deal_with_document_request(user, document_obj):
     text = "Mandami l'immagine come *photo* e non come documento."
-    send_message(user.serial_number, text)    
+    send_message(user, text)    
+
+TELEGRAM_BOT_MASTER = None
 
 def report_master(error_message):
-    send_message(key.TELEGRAM_BOT_MASTER_ID, error_message, markdown=False)    
+    global TELEGRAM_BOT_MASTER
+    if TELEGRAM_BOT_MASTER is None:
+        TELEGRAM_BOT_MASTER = NDB_User('telegram', key.TELEGRAM_BOT_MASTER_ID, update=False)
+    send_message(TELEGRAM_BOT_MASTER, error_message, markdown=False)    

@@ -46,7 +46,7 @@ def telegram_webhook_handler():
 
 @app.route(key.WEBKOOK_TWITTER_ROUTING, methods=['GET'])
 def twitter_webhook_challenger():
-    from twitter import solve_crc_challenge
+    from twitter_bot import solve_crc_challenge
     logging.debug("in twitter_webhook_challenger function")
     #import telegram_bot
     #telegram_bot.report_master("call to twitter_webhook_challenger")
@@ -64,8 +64,7 @@ def twitter_webhook_challenger():
 
 @app.route(key.WEBKOOK_TWITTER_ROUTING, methods=['POST'])
 def twitter_webhook_handler():    
-    import twitter
-    import json
+    import twitter_bot
     event_json = request.get_json()    
-    twitter.deal_with_event(event_json)
+    twitter_bot.deal_with_event(event_json)
     return 'ok'

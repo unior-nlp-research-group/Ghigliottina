@@ -3,26 +3,28 @@
 from parameters import UNFOUND_PAIR_SCORE, HIGH_CONFIDENCE_SCORE, GOOD_CONFIDENCE_SCORE, AVERAGE_CONFIDENCE_SCORE
 import ui
 import logging
+from ndb_ghigliottina import NDB_Ghigliottina
 
 def tokenize_clues(text):
     return [x.strip() for x in text.split(',')] if ',' in text else text.split()
 
 
-def get_solution_from_image_clues(clues_list, from_twitter):
+def get_solution_from_image(user, clues_list):
     if len(clues_list)==5:
         clues_list_str = ','.join(clues_list)
-        reply_text, correct = get_solution(clues_list_str, from_twitter=from_twitter)    
+        reply_text, correct = get_solution(user, clues_list_str)    
         return reply_text, correct        
     else:
         return ui.getImgProblemText(), False
     
 
-def get_solution(text, from_twitter):
+def get_solution(user, text):
 
     text = text.lower()
+    from_twitter = user.from_twitter()
 
     if any(x in text for x in ui.INFO_QUESTIONS_LOWER):
-        reply_text = ui.intro(from_twitter=from_twitter)
+        reply_text = ui.intro(from_twitter)
         return reply_text, True
 
     from cloud_operations import get_clue_subtable
@@ -64,6 +66,7 @@ def get_solution(text, from_twitter):
     clues_str = ', '.join(clues)
     if len(sorted_x_table_sum)==0:
         reply_text = ui.no_solution_found(from_twitter, clues_str)
+        NDB_Ghigliottina(user, clues, None)
         return reply_text, True
     best_solution, scores_table = sorted_x_table_sum[0]
     score_sum = scores_table['sum']
@@ -77,4 +80,5 @@ def get_solution(text, from_twitter):
         reply_text = ui.low_confidence_solution(from_twitter, clues_str, best_solution)
     
     logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))
+    NDB_Ghigliottina(user, clues, best_solution)
     return reply_text, True
