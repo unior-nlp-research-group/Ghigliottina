@@ -16,6 +16,10 @@ import os
 ## MODEL 05 ALL CORPORA small lex
 ######################################
 
+'''
+OUTDATED MODEL (only working in old commit)
+'''
+
 OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_05_evalita/"
 
 LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq.txt"
@@ -99,7 +103,7 @@ def eval():
     matrix = Matrix_Dict()
     matrix.read_matrix_from_file(MATRIX_FILE)
     #matrix.read_matrix_from_file(MATRIX_REVERSED_FILE)
-    #print('Number of rows: {}'.format(matrix.size()))
+    print('Number of rows: {}'.format(matrix.size()))
     print('Evaluating')
     
     
@@ -176,9 +180,9 @@ def reverse_matrix():
 
 if __name__=='__main__':  
     #build_and_eval()
-    interactive_solver()
+    #interactive_solver()
     #correlation_score_match()
-    #eval()
+    eval()
     #split_matrix()  
     #print_row_column_sets()
     #reverse_matrix()

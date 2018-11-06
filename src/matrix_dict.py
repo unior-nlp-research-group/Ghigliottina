@@ -116,3 +116,14 @@ class Matrix_Dict(Matrix_Base):
             for solution, weight in clue_subtable.items():
                 matrix.table[solution][clue] = weight        
         return matrix
+
+    def genererate_game(self):
+        import random
+        solution = random.choice(list(self.table.keys()))
+        clues_scores = sorted(self.table[solution].items(), key=lambda x: -x[1])
+        best_clues_scores = clues_scores[:5]
+        #clues = random.sample(acceptable_clues, 5)
+        clues = [x[0] for x in best_clues_scores]
+        scores = [x[1] for x in best_clues_scores]
+        #scores = [solution_clues_subtable[c] for c in clues]
+        return clues, solution, scores

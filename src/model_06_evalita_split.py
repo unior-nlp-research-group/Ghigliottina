@@ -21,8 +21,10 @@ OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_06_evalita_split/"
 LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq.txt"
 SOLUTION_LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq_solution.txt"
 LEX_INDEX_FILE = OUTPUT_DIR + "lex_index.pkl"
-MATRIX_FILE = OUTPUT_DIR + "matrix.pkl"
-MATRIX_REVERSED_FILE = OUTPUT_DIR + 'matrix_reversed.pkl'
+
+MATRIX_FILE = OUTPUT_DIR + "matrix.pkl" # clues in keys
+MATRIX_REVERSED_FILE = OUTPUT_DIR + 'matrix_reversed.pkl' #solution in keys
+
 MATRIX_FILE_SPLIT_DIR = os.path.join(OUTPUT_DIR, 'matrix_split')
 COVERAGE_WORD_GAME100_FILE = OUTPUT_DIR + "game_word_100_coverage.txt"
 
@@ -173,6 +175,13 @@ def reverse_matrix():
     matrix.read_matrix_from_file(MATRIX_FILE)
     reversed_matrix = matrix.reverse_matrix()
     reversed_matrix.write_matrix_to_file(MATRIX_REVERSED_FILE)
+
+def generate_games():
+    import game_generator
+    matrix = Matrix_Dict()
+    matrix.read_matrix_from_file(MATRIX_REVERSED_FILE)
+    print('Number of rows: {}'.format(matrix.size()))
+    game_generator.interactive_generator(matrix)
 
 if __name__=='__main__':  
     #build_and_eval()
