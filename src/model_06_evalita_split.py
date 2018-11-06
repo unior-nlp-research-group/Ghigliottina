@@ -95,9 +95,9 @@ def build_and_eval():
 def eval():
     from convert_xml import output_results
     print('Loading association matrix')
-    #matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, LOWEST_SCORE)    
-    matrix = Matrix_Dict()
-    matrix.read_matrix_from_file(MATRIX_FILE)
+    matrix = Matrix_Split(MATRIX_FILE_SPLIT_DIR, LOWEST_SCORE)    
+    #matrix = Matrix_Dict()
+    #matrix.read_matrix_from_file(MATRIX_FILE)
     #matrix.read_matrix_from_file(MATRIX_REVERSED_FILE)
     #print('Number of rows: {}'.format(matrix.size()))
     print('Evaluating')
