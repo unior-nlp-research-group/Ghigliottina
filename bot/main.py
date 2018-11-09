@@ -28,6 +28,9 @@ def page_not_found(e):
     # note that we set the 404 status explicitly
     return ("url not found", 404)
 
+@app.errorhandler(500)
+def internal_error(error):
+    return ("500 error: {}".format(error), 500)
 
 @app.route(key.WEBHOOK_TELEGRAM_ROUTING, methods=['POST'])
 def telegram_webhook_handler():
@@ -95,29 +98,36 @@ def solver_handler():
 def quiztime_solver_handler():
     import json
     import solver
-    import requests
+    import threading
     request_json = request.get_json(force=True)
     logging.debug("SOLVER POST REQUEST: {}".format(json.dumps(request_json)))
     auth_key = request.headers.get('Authorization')
     clue_keys = ['w1', 'w2', 'w3', 'w4', 'w5']
-    id_key = 'game_id'
+    game_id_key = 'game_id'
     callback_key = 'callback'
-    solution_key = 'solution'
-    uuid_key = 'uuid'
-    all_keys = clue_keys + [id_key, callback_key]
-    if auth_key == key.QUIZTIME_INPUT_AUTH and all(k in request_json for k in all_keys):
+    required_keys = clue_keys + [game_id_key, callback_key]
+    if auth_key == key.QUIZTIME_INPUT_AUTH and all(k in request_json for k in required_keys):
         clues = [request_json[w] for w in clue_keys]
         solution = solver.get_best_solution(clues)        
         headers = {'Authorization': key.QUIZTIME_AUTHORIZATION}
-        callback_url = request_json[callback_key]
-        logging.debug('Sending POST request to: {}'.format(callback_url))
+        callback_url = request_json[callback_key]        
         callback_data = {
-            id_key: request_json[id_key],
-            solution_key: solution,
-            uuid_key: key.QUIZTIME_USER_ID
-        }
-        r = requests.post(callback_url, headers=headers, data=callback_data)                
-        result = {'success': True, 'callback status': r.status_code}
+            game_id_key: request_json[game_id_key],
+            'solution': solution,
+            'uuid': key.QUIZTIME_USER_ID
+        }   
+
+        def send_response_callback(callback_url, headers, callback_data):
+            import requests
+            logging.debug('Sending POST request to: {}'.format(callback_url))
+            r = requests.post(callback_url, headers=headers, data=callback_data)
+            logging.debug("Return status: {}".format(r.status_code))
+        
+        threading.Thread(target=send_response_callback,
+            args=(callback_url, headers, callback_data)
+        ).start()
+        
+        result = {'success': True}
     else:
         result = {'success': False, 'reason': 'Invald request'}
     return jsonify(result)
