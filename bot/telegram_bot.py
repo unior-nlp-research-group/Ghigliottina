@@ -11,7 +11,7 @@ from ndb_user import NDB_User
 TELEGRAM_BOT = telegram.Bot(token=key.TELEGRAM_API_TOKEN)
 
 def set_webhook():
-    s = TELEGRAM_BOT.setWebhook(key.WEBKOOK_TELEGRAM_BASE)
+    s = TELEGRAM_BOT.setWebhook(key.WEBHOOK_TELEGRAM_BASE)
     if s:
         return "webhook setup ok"
     else:
@@ -117,8 +117,8 @@ def deal_with_document_request(user, document_obj):
 
 TELEGRAM_BOT_MASTER = None
 
-def report_master(error_message):
+def report_master(message):
     global TELEGRAM_BOT_MASTER
     if TELEGRAM_BOT_MASTER is None:
         TELEGRAM_BOT_MASTER = NDB_User('telegram', key.TELEGRAM_BOT_MASTER_ID, update=False)
-    send_message(TELEGRAM_BOT_MASTER, error_message, markdown=False)    
+    send_message(TELEGRAM_BOT_MASTER, message, markdown=False)    

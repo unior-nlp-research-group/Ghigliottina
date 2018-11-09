@@ -27,8 +27,6 @@ def get_solution(user, text):
         reply_text = ui.intro(from_twitter)
         return reply_text, True
 
-    from cloud_operations import get_clue_subtable
-    
     clues = tokenize_clues(text)
     
     if len(clues)!=5:
@@ -36,31 +34,7 @@ def get_solution(user, text):
         logging.debug('No 5 clues detected: {}'.format(clues))
         return reply_text, False
 
-    x_table = {}
-
-    def update_x_table(x_key, clue_index, x_clue_score):
-        if x_key in x_table:
-            entry = x_table[x_key]
-        else:
-            x_table[x_key] = entry = {
-                'scores': [UNFOUND_PAIR_SCORE] * 5,
-                'sum': UNFOUND_PAIR_SCORE * 5,
-                'clues_matched_info': ['_'] * 5,
-                'clues_matched_count': 0
-            }      
-        entry['scores'][clue_index] = x_clue_score
-        entry['sum'] += x_clue_score - UNFOUND_PAIR_SCORE
-        entry['clues_matched_info'][clue_index] = 'X'
-        entry['clues_matched_count'] += 1
-
-    for i,c in enumerate(clues):
-        clue_subtable = get_clue_subtable(c)
-        if clue_subtable is None:
-            continue
-        for x,s in clue_subtable.items():
-            if x not in clues:
-                update_x_table(x, i, s)
-
+    x_table = get_solution_table(clues)
         
     clues_str = ', '.join(clues)
     if len(x_table)==0:
@@ -98,6 +72,43 @@ def get_solution(user, text):
         logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))        
         return reply_text, True
 
-if __name__ == "__main__":
-     reply_text, success = get_solution(None, "giardino lago foresta legge elefante", debug=True)
-     print(reply_text)
+def get_solution_table(clues):
+    from cloud_operations import get_clue_subtable
+    
+    x_table = {}
+    
+    def update_x_table(x_key, clue_index, x_clue_score):
+        if x_key in x_table:
+            entry = x_table[x_key]
+        else:
+            x_table[x_key] = entry = {
+                'scores': [UNFOUND_PAIR_SCORE] * 5,
+                'sum': UNFOUND_PAIR_SCORE * 5,
+                'clues_matched_info': ['_'] * 5,
+                'clues_matched_count': 0
+            }      
+        entry['scores'][clue_index] = x_clue_score
+        entry['sum'] += x_clue_score - UNFOUND_PAIR_SCORE
+        entry['clues_matched_info'][clue_index] = 'X'
+        entry['clues_matched_count'] += 1
+
+    for i,c in enumerate(clues):
+        clue_subtable = get_clue_subtable(c)
+        if clue_subtable is None:
+            continue
+        for x,s in clue_subtable.items():
+            if x not in clues:
+                update_x_table(x, i, s)
+    return x_table
+
+def get_best_solution(clues):
+    x_table = get_solution_table(clues)
+    sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
+    if len(sorted_x_table_sum)==0:
+        return 'casa'
+    best_solution, _ = sorted_x_table_sum[0]
+    return best_solution
+
+# if __name__ == "__main__":
+#      solution = get_best_solution("giardino lago foresta legge elefante".split())
+#      print(solution)

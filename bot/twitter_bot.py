@@ -35,7 +35,7 @@ api = TwitterAPI(
 def set_webhook():    
     r = api.request(
         'account_activity/all/:{}/webhooks'.format(key.TWITTER_ENVNAME), 
-        {'url': key.WEBKOOK_TWITTER_BASE},
+        {'url': key.WEBHOOK_TWITTER_BASE},
         method_override='POST'
     )
     #id = r.json()['id']
