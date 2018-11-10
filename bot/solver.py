@@ -106,7 +106,7 @@ def get_best_solution(clues):
     sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
     if len(sorted_x_table_sum)==0:
         return 'casa'
-    best_solution, _ = sorted_x_table_sum[0]
+    best_solution, _ = sorted_x_table_sum[0]    
     return best_solution
 
 # if __name__ == "__main__":

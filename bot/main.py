@@ -93,38 +93,41 @@ def solver_handler():
         }
     return jsonify(result)
 
+def send_quiztime_response_callback(clues, callback_url, game_id):
+    import requests
+    import solver
+    from ndb_ghigliottina import NDB_Ghigliottina
+    from ndb_user import NDB_User
+    solution = solver.get_best_solution(clues)        
+    headers = {'Authorization': key.QUIZTIME_AUTHORIZATION}
+    callback_data = {
+        'game_id': game_id,
+        'solution': solution,
+        'uuid': key.QUIZTIME_USER_ID
+    }   
+    #logging.debug('Sending POST request to: {}'.format(callback_url))
+    requests.post(callback_url, headers=headers, data=callback_data)
+    user = NDB_User('quiztime', 0, update=False)
+    NDB_Ghigliottina(user, clues, solution)
+    #logging.debug("Return status: {}".format(r.status_code))
 
 @app.route(key.WEBHOOK_QUIZTIME_ROUTING, methods=['POST'])
 def quiztime_solver_handler():
-    import json
-    import solver
+    import json    
     import threading
     request_json = request.get_json(force=True)
-    logging.debug("SOLVER POST REQUEST: {}".format(json.dumps(request_json)))
+    logging.debug("QUIZTIME POST REQUEST: {}".format(json.dumps(request_json)))
     auth_key = request.headers.get('Authorization')
     clue_keys = ['w1', 'w2', 'w3', 'w4', 'w5']
     game_id_key = 'game_id'
     callback_key = 'callback'
     required_keys = clue_keys + [game_id_key, callback_key]
     if auth_key == key.QUIZTIME_INPUT_AUTH and all(k in request_json for k in required_keys):
-        clues = [request_json[w] for w in clue_keys]
-        solution = solver.get_best_solution(clues)        
-        headers = {'Authorization': key.QUIZTIME_AUTHORIZATION}
+        clues = [request_json[w] for w in clue_keys]        
         callback_url = request_json[callback_key]        
-        callback_data = {
-            game_id_key: request_json[game_id_key],
-            'solution': solution,
-            'uuid': key.QUIZTIME_USER_ID
-        }   
-
-        def send_response_callback(callback_url, headers, callback_data):
-            import requests
-            logging.debug('Sending POST request to: {}'.format(callback_url))
-            r = requests.post(callback_url, headers=headers, data=callback_data)
-            logging.debug("Return status: {}".format(r.status_code))
-        
-        threading.Thread(target=send_response_callback,
-            args=(callback_url, headers, callback_data)
+        game_id = request_json[game_id_key]        
+        threading.Thread(target=send_quiztime_response_callback,
+            args=(clues, callback_url, game_id)
         ).start()
         
         result = {'success': True}
