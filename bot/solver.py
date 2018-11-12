@@ -102,6 +102,7 @@ def get_solution_table(clues):
     return x_table
 
 def get_best_solution(clues):
+    clues = [c.lower() for c in clues]
     x_table = get_solution_table(clues)
     sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
     if len(sorted_x_table_sum)==0:
