@@ -4,18 +4,19 @@ from TwitterAPI import TwitterAPI
 import key
 import json
 import re
+from string import punctuation
 import solver
 
 from exception_handler import exception_reporter
 
-from requests_oauthlib import OAuth1Session
-from parameters import TWITTER_API_BASE
 import logging
 import ui
 
 from ndb_user import NDB_User
 
 def test():
+    from parameters import TWITTER_API_BASE
+    from requests_oauthlib import OAuth1Session
     auth = OAuth1Session(
         key.TWITTER_CUSUMER_API_KEY, key.TWITTER_CUSUMER_API_SECRET,
         key.TWITTER_ACCESS_TOKEN, key.TWITTER_ACCESS_TOKEN_SECRET)
@@ -196,8 +197,11 @@ def process_tweet_post(event_json):
         sender_id = user_info['id']
         sender_name = user_info['name']
         user = NDB_User('twitter', sender_id, name=sender_name, username=sender_screen_name)
-        message_text = re.sub(r'(#|@)\w+','',message_text).strip()        
+        message_text = re.sub(r'(#|@)\w+','',message_text).strip()
+        message_text = ''.join(c for c in message_text if c not in punctuation)
         reply_text, correct = solver.get_solution(user, message_text)
+        if correct and 'è' in message_text.split():
+            correct = False
         tweet_image_url = tweet_info.get('entities',{}).get('media',[{}])[0].get('media_url',None)
         if not correct:            
             if tweet_image_url:
