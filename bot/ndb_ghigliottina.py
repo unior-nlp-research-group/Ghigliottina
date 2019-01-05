@@ -45,3 +45,18 @@ def get_last_clues_solution_score():
         entry = last_list[0]
         return entry['clues'], entry['solution'], entry['score']
     return None, None, None
+
+def iter_ghigliottine():
+    query = CLIENT.query(kind=KIND)
+    def get_next_page(cursor):
+        query_iter = query.fetch(start_cursor=cursor, limit=5)
+        page = next(query_iter.pages)
+        entries = list(page)
+        next_cursor = query_iter.next_page_token
+        return entries, next_cursor
+    cursor = None
+    while(True):    
+        entries, cursor = get_next_page(cursor)
+        print("{} {}".format(len(entries),cursor))
+        if cursor == None:
+            break
