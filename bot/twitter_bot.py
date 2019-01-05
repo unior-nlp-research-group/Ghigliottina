@@ -175,7 +175,7 @@ def process_direct_message(event_json):
         sender_name = get_user_info('user_id', sender_id).get('name', None)
         user = NDB_User('twitter', sender_id, name=sender_name, username=sender_screen_name)
         message_text = message_info['message_data']['text']
-        reply_text, _ = solver.get_solution(user, message_text)
+        reply_text, _ = solver.get_solution_from_text(user, message_text)
         logging.debug('TWITTER Reply to direct message from @{} with text {} -> {}'.format(sender_screen_name, message_text, reply_text))
         send_message(sender_id, reply_text)
 
@@ -199,7 +199,7 @@ def process_tweet_post(event_json):
         user = NDB_User('twitter', sender_id, name=sender_name, username=sender_screen_name)
         message_text = re.sub(r'(#|@)\w+','',message_text).strip()
         message_text = ''.join(c for c in message_text if c==',' or c not in punctuation)
-        reply_text, correct = solver.get_solution(user, message_text)
+        reply_text, correct = solver.get_solution_from_text(user, message_text)
         if correct and 'è' in message_text.split():
             correct = False
         tweet_image_url = tweet_info.get('entities',{}).get('media',[{}])[0].get('media_url',None)

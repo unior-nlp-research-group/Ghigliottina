@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from parameters import UNFOUND_PAIR_SCORE, HIGH_CONFIDENCE_SCORE, GOOD_CONFIDENCE_SCORE, AVERAGE_CONFIDENCE_SCORE
+from parameters import DEFAULT_SOLUTION, UNFOUND_PAIR_SCORE, HIGH_CONFIDENCE_SCORE, GOOD_CONFIDENCE_SCORE, AVERAGE_CONFIDENCE_SCORE
 import ui
 import logging
 from ndb_ghigliottina import NDB_Ghigliottina
@@ -12,14 +12,13 @@ def tokenize_clues(text):
 def get_solution_from_image(user, clues_list):
     if len(clues_list)==5:
         clues_list_str = ','.join(clues_list)
-        reply_text, correct = get_solution(user, clues_list_str)    
+        reply_text, correct = get_solution_from_text(user, clues_list_str)    
         return reply_text, correct        
     else:
         return ui.getImgProblemText(), False
     
 
-def get_solution(user, text):
-
+def get_solution_from_text(user, text):
     text = text.lower()
     from_twitter = user.from_twitter()
 
@@ -34,45 +33,59 @@ def get_solution(user, text):
         logging.debug('No 5 clues detected: {}'.format(clues))
         return reply_text, False
 
-    x_table = get_solution_table(clues)
-        
-    clues_str = ', '.join(clues)
-    if len(x_table)==0:
-        reply_text = ui.no_solution_found(from_twitter, clues_str)
-        NDB_Ghigliottina(user, clues, None)
-        return reply_text, True
-    
-    sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
-    best_solution, scores_table = sorted_x_table_sum[0]
-    NDB_Ghigliottina(user, clues, best_solution)
-    if user.debug:
-        result = []
-        for s in [5,4,3]:
-            result.append('\n-------------------------------------')
-            result.append('Best of {}'.format(s))
-            result.append('-------------------------------------')
-            sorted_x_table_set = [x for x in sorted_x_table_sum if x[1]['clues_matched_count'] == s]
-            for key,value in sorted_x_table_set[:5]:
-                scores = ', '.join(['{0:.1f}'.format(s) for s in value['scores']])
-                scores_sum = '{0:.1f}'.format(value['sum'])
-                result.append('{}: {} -> sum({}) = {}'.format(key,value['clues_matched_count'], scores, scores_sum))
-        reply_text = '```' + '\n'.join(result) + '\n```'
-        return reply_text, True
-    else:        
-        score_sum = scores_table['sum']
-        if score_sum > HIGH_CONFIDENCE_SCORE:
-            reply_text = ui.high_confidence_solution(from_twitter, clues_str, best_solution)
-        if score_sum > GOOD_CONFIDENCE_SCORE:
-            reply_text = ui.good_confidence_solution(from_twitter, clues_str, best_solution)
-        if score_sum > AVERAGE_CONFIDENCE_SCORE:
-            reply_text = ui.average_confidence_solution(from_twitter, clues_str, best_solution)
-        else:
-            reply_text = ui.low_confidence_solution(from_twitter, clues_str, best_solution)
-        
-        logging.debug('Solution detected. Clues: {} Solution: {}'.format(clues, best_solution))        
-        return reply_text, True
+    _, reply_text, success = get_solution_from_clues(user, clues)
+    return reply_text, success
 
-def get_solution_table(clues):
+
+def get_solution_from_clues(user, clues):
+    from ndb_ghigliottina import get_past_solution_score
+    clues = [c.lower() for c in clues]
+    clues_str = ', '.join(clues)
+    from_twitter = user.from_twitter()
+    best_solution, best_score = get_past_solution_score(clues)
+    if not user.debug and best_solution:
+        reply_text = get_reply_based_on_score(from_twitter, clues_str, best_solution, best_score)
+        logging.debug('Old solution detected. Clues: {} Solution: {}'.format(clues, best_solution))        
+    else:
+        x_table = compute_solution_table(clues)                
+        if len(x_table)==0:
+            reply_text = ui.no_solution_found(from_twitter, clues_str, DEFAULT_SOLUTION)
+            best_solution = DEFAULT_SOLUTION
+            best_score = UNFOUND_PAIR_SCORE
+        else:    
+            sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
+            best_solution, scores_table = sorted_x_table_sum[0]
+            best_score = scores_table['sum']
+            if user.debug:
+                result = []                
+                for s in [5,4,3]:                    
+                    result.append('\n-------------------------------------')
+                    result.append('Best of {}'.format(s))
+                    result.append('-------------------------------------')
+                    sorted_x_table_set = [x for x in sorted_x_table_sum if x[1]['clues_matched_count'] == s]
+                    for key,value in sorted_x_table_set[:5]:
+                        scores = ', '.join(['{0:.1f}'.format(s) for s in value['scores']])
+                        scores_sum = '{0:.1f}'.format(value['sum'])
+                        result.append('{}: {} -> sum({}) = {}'.format(key,value['clues_matched_count'], scores, scores_sum))
+                result.append('\nBest solution: {}'.format(best_solution))
+                reply_text = '```' + '\n'.join(result) + '\n```'
+            else:                
+                reply_text = get_reply_based_on_score(from_twitter, clues_str, best_solution, best_score)
+        logging.debug('New solution computed. Clues: {} Solution: {}'.format(clues, best_solution))        
+    NDB_Ghigliottina(user, clues, best_solution, best_score)
+    return best_solution, reply_text, True
+
+def get_reply_based_on_score(from_twitter, clues_str, best_solution, best_score):
+    if best_score > HIGH_CONFIDENCE_SCORE:
+        return ui.high_confidence_solution(from_twitter, clues_str, best_solution)
+    if best_score > GOOD_CONFIDENCE_SCORE:
+        return ui.good_confidence_solution(from_twitter, clues_str, best_solution)
+    if best_score > AVERAGE_CONFIDENCE_SCORE:
+        return ui.average_confidence_solution(from_twitter, clues_str, best_solution)
+    return ui.low_confidence_solution(from_twitter, clues_str, best_solution)  
+
+
+def compute_solution_table(clues):
     from cloud_operations import get_clue_subtable
     
     x_table = {}
@@ -101,15 +114,6 @@ def get_solution_table(clues):
                 update_x_table(x, i, s)
     return x_table
 
-def get_best_solution(clues):
-    clues = [c.lower() for c in clues]
-    x_table = get_solution_table(clues)
-    sorted_x_table_sum = sorted(x_table.items(),key=lambda k:(-k[1]['sum'], k[0]))
-    if len(sorted_x_table_sum)==0:
-        return 'casa'
-    best_solution, _ = sorted_x_table_sum[0]    
-    return best_solution
-
 # if __name__ == "__main__":
-#      solution = get_best_solution("giardino lago foresta legge elefante".split())
+#      solution = get_best_solution_score("giardino lago foresta legge elefante".split())
 #      print(solution)

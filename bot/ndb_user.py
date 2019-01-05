@@ -36,3 +36,14 @@ class NDB_User(NDB_Base):
 
     def from_twitter(self):
         return self.application == 'twitter'
+    
+    def needs_a_reply(self):
+        return self.application in ['twitter', 'telegram']
+
+def get_quiztime_user():
+    user = NDB_User('quiztime', 0)
+    return user
+
+def get_webhook_solver_user():
+    user = NDB_User('webhook_solver', 0)
+    return user

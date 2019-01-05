@@ -27,9 +27,9 @@ def wrong_input(from_twitter, text):
     else:
         return reply.format(text)    
         
-def no_solution_found(from_twitter, text):
+def no_solution_found(from_twitter, text, solution):
     if from_twitter:
-        reply = "😫 Non ho trovato nessuna soluzione alle 5 parole inserite ({})\n#ghigliottina #leredita #rai1 #leredità #laghigliottina"
+        reply = "😫 Non ho trovato nessuna soluzione alle 5 parole inserite ({}). Provo comunque con {}\n#ghigliottina #leredita #rai1 #leredità #laghigliottina".format('{}',solution)
         text = restrict_text_to_twitter_limit(reply, text)
         return reply.format(text)
     else:

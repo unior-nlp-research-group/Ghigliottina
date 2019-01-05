@@ -84,7 +84,7 @@ def deal_with_text_request(user, text):
             msg = "Debug attivato" if user.debug else "Debug disattivato"
             send_message(user, msg)    
             return        
-    reply_text, _ = solver.get_solution(user, text)    
+    reply_text, _ = solver.get_solution_from_text(user, text)    
     send_message(user, reply_text)    
     logging.debug('TELEGRAM Reply to message from @{} with text {} -> {}'.format(user.serial_number, text, reply_text))            
 

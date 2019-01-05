@@ -21,10 +21,14 @@ def root():
     """Return a friendly HTTP greeting."""
     return ("Progetto per risolvere in maniera automatica il gioco 'La Ghigliottina' parte del programma l'Eredità di Rai 1.", 200)
 
+@app.route('/test')
+def test():
+    logging.debug("in test function")
+    return ("test", 200)
 
 @app.errorhandler(404)
-def page_not_found(e):
-    logging.debug("page_not_found")
+def page_not_found(error):
+    logging.debug("page_not_found: {}".format(error))
     # note that we set the 404 status explicitly
     return ("url not found", 404)
 
@@ -73,32 +77,35 @@ def twitter_webhook_handler():
 
 
 @app.route(key.WEBHOOK_SOLVER_ROUTING, methods=['POST'])
-def solver_handler():
-    import json
-    import solver
-    request_json = request.get_json(force=True)
+def webhook_solver():        
+    import json    
+    request_json = request.get_json(force=True, silent=True)
     logging.debug("SOLVER POST REQUEST: {}".format(json.dumps(request_json)))
-    clue_keys = ['w1', 'w2', 'w3', 'w4', 'w5']
+    import solver    
+    clue_keys = ['w1', 'w2', 'w3', 'w4', 'w5']    
     if all(k in request_json for k in clue_keys):
+        from ndb_user import get_webhook_solver_user
+        user = get_webhook_solver_user()
         clues = [request_json[w] for w in clue_keys]
-        solution = solver.get_best_solution(clues)
+        solution, _, _ = solver.get_solution_from_clues(user, clues)
         result = {
             'success': True,
+            'reason': 'success',
             'solution': solution
         }
     else:
         result = {
             'success': False,
-            'reason': 'No keys w1, w2, ... w3 in input json'
-        }
+            'reason': 'No keys w1, w2, w3, w4, w5 in input json'
+        }    
     return jsonify(result)
 
 def send_quiztime_response_callback(clues, callback_url, game_id):
     import requests
     import solver
-    from ndb_ghigliottina import NDB_Ghigliottina
-    from ndb_user import NDB_User
-    solution = solver.get_best_solution(clues)        
+    from ndb_user import get_quiztime_user
+    user = get_quiztime_user()
+    solution, _, _ = solver.get_solution_from_clues(user, clues)        
     headers = {'Authorization': key.QUIZTIME_AUTHORIZATION}
     callback_data = {
         'game_id': game_id,
@@ -107,8 +114,6 @@ def send_quiztime_response_callback(clues, callback_url, game_id):
     }   
     #logging.debug('Sending POST request to: {}'.format(callback_url))
     requests.post(callback_url, headers=headers, data=callback_data)
-    user = NDB_User('quiztime', 0, update=False)
-    NDB_Ghigliottina(user, clues, solution)
     #logging.debug("Return status: {}".format(r.status_code))
 
 @app.route(key.WEBHOOK_QUIZTIME_ROUTING, methods=['POST'])
