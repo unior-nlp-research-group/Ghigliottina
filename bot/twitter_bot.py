@@ -198,7 +198,7 @@ def process_tweet_post(event_json):
         sender_name = user_info['name']
         user = NDB_User('twitter', sender_id, name=sender_name, username=sender_screen_name)
         message_text = re.sub(r'(#|@)\w+','',message_text).strip()
-        message_text = ''.join(c for c in message_text if c not in punctuation)
+        message_text = ''.join(c for c in message_text if c==',' or c not in punctuation)
         reply_text, correct = solver.get_solution(user, message_text)
         if correct and 'è' in message_text.split():
             correct = False
