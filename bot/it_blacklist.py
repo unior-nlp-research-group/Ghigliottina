@@ -56,6 +56,7 @@ blacklist_words = [
     'culattoni',
     'culi',
     'culo',
+    'culone',
     'ditalini',
     'ditalino',
     'fica',
@@ -84,7 +85,8 @@ blacklist_words = [
     'merdata',
     'merdate',
     'merde',
-    'merdosa',
+    'merdone',
+    'merdosa',    
     'merdose',
     'merdosi',
     'merdoso',
@@ -153,6 +155,8 @@ blacklist_words = [
     'trombare',
     'vacca',
     'vaffanculo',
+    'vagina',
+    'vagine',
     'zoccola',
     'zoccole'
 ]
