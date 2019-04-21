@@ -85,8 +85,12 @@ def get_reply_based_on_score(from_twitter, clues_str, best_solution, best_score)
     return ui.low_confidence_solution(from_twitter, clues_str, best_solution)  
 
 
-def compute_solution_table(clues):
+def compute_solution_table(clues, exclude_blacklist_words = True):
     from cloud_operations import get_clue_subtable
+    
+    blacklist_words = []
+    if exclude_blacklist_words:
+        from it_blacklist import blacklist_words
     
     x_table = {}
     
@@ -110,6 +114,8 @@ def compute_solution_table(clues):
         if clue_subtable is None:
             continue
         for x,s in clue_subtable.items():
+            if x in blacklist_words:
+                continue
             if x not in clues:
                 update_x_table(x, i, s)
     return x_table
