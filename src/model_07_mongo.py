@@ -1,22 +1,18 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-
+import sys
 import corpora
 import utility
 import path
-from matrix_dict import Matrix_Dict
-from matrix_split import Matrix_Split
-
+import patterns_extraction
 
 import lexicon
 import scorer
 import os
 
 ######################################
-## MODEL 06 ALL CORPORA evalita split
+## MODEL 07 DB
 ######################################
 
-OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_06_evalita_split/"
+OUTPUT_DIR = path.GHIGLIOTTINA_BASE_FILE_PATH + "model_07_db/"
 
 LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq.txt"
 SOLUTION_LEX_FREQ_FILE = OUTPUT_DIR + "lex_freq_solution.txt"
@@ -52,7 +48,8 @@ COMPOUNDS_WEIGHT = 50
 LOWEST_SCORE = -8.254895446396917
 #LOWEST_SCORE = -8.69121046025845
 
-def build_and_eval():
+
+def build():
     utility.make_dir(OUTPUT_DIR)
 
     print('Building lexicon')
@@ -63,33 +60,39 @@ def build_and_eval():
     lex_set = set(poli_lexicon+sost_lexicon+agg_lexicon)
     lex_solution_set =  set(sost_lexicon+agg_lexicon)
 
-    '''
-    poli_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE))
-    sost_lexicon = list(corpora.getSostantiviSetFromPaisa(min_freq=1000, inflected=True))
-    print('\nSize of sostantivi lex: {}'.format(len(sost_lexicon)))
-    agg_lexicon = list(corpora.getAggettiviSetFromPaisa(min_freq=1000, inflected=True))
-    print('\nSize of agg lex: {}'.format(len(agg_lexicon)))
-    lex_set = set(poli_lexicon + sost_lexicon + agg_lexicon)
-    '''
-
     lexicon.printLexiconToFile(lex_set, LEX_FREQ_FILE)
     lexicon.printLexiconToFile(lex_solution_set, SOLUTION_LEX_FREQ_FILE)
 
-    print('Computing lex coverage')
-    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
+    def add_patterns_from_corpus(corpus_info):
+        lines_extractor = corpora.extract_lines(corpus_info)
+        source = corpus_info['name']
+        patterns_count = 0
+        print("Adding patterns from source: {}".format(source))
+        tot_lines = corpus_info['lines']
+        for n,line in enumerate(lines_extractor,1):            
+            patterns_count += patterns_extraction.addPatternsFromLineInMongo(line, lex_set, source)    
+            if n%1000==0:
+                sys.stdout.write("Progress: {0:.1f}%\r".format(float(n)*100/tot_lines))
+                sys.stdout.flush()
+        print('Extracted patterns: {}'.format(patterns_count))
+
+
+    # print('Computing lex coverage')
+    # scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
     
-    print('Building association matrix')
-    matrix = Matrix_Dict(lex_set, lex_solution_set)
-    matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO)
-    matrix.add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO, weight=DE_MAURO_WEIGHT)
-    matrix.add_patterns_from_corpus(corpora.PROVERBI_INFO, weight=PROVERBI_WEIGHT)    
-    matrix.add_patterns_from_corpus(corpora.ITWAC_RAW_INFO, weight=1)
-    matrix.add_patterns_from_corpus(corpora.WIKI_IT_TITLES_INFO, weight=WIKI_IT_WEIGHT)        
-    #matrix.add_patterns_from_corpus(corpora.WIKI_IT_TEXT_INFO, weight=1)        
-    corpora.addBigramFromPolirematicheInMatrix(matrix, DE_MAURO_WEIGHT)    
-    corpora.addBigramFromCompunds(matrix, lex_set, min_len=4, weight=COMPOUNDS_WEIGHT)
-    matrix.compute_association_scores()
-    matrix.write_matrix_to_file(MATRIX_FILE)
+    print('Adding patterns in db')
+    # add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO)
+    # add_patterns_from_corpus(corpora.PAISA_RAW_INFO)    
+    # add_patterns_from_corpus(corpora.PROVERBI_INFO)    
+    add_patterns_from_corpus(corpora.ITWAC_RAW_INFO)
+    # add_patterns_from_corpus(corpora.WIKI_IT_TITLES_INFO)        
+    # # add_patterns_from_corpus(corpora.WIKI_IT_TEXT_INFO, weight=1)        
+    # corpora.addBigramFromPolirematicheInMatrix(matrix)    
+    # corpora.addBigramFromCompunds(matrix, lex_set, min_len=4)
+
+
+def build_and_eval():
+    build()    
     
     print('Eval')
     scorer.evaluate_kbest_MeanReciprocalRank(matrix, corpora.GAME_SET_100_FILE, EVAL_WORD_GAME100_FILE) 
@@ -184,10 +187,11 @@ def generate_games():
     game_generator.interactive_generator(matrix)
 
 if __name__=='__main__':  
+    build()
     #build_and_eval()
     #interactive_solver()
     #correlation_score_match()
-    eval()
+    # eval()
     #split_matrix()  
     #print_row_column_sets()
     #reverse_matrix()

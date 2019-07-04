@@ -1,0 +1,7 @@
+indexes:
+
+- kind: Ghigliottina
+  ancestor: yes
+  properties:
+  - name: dt
+    direction: desc

@@ -11,7 +11,7 @@ from ndb_user import NDB_User
 TELEGRAM_BOT = telegram.Bot(token=key.TELEGRAM_API_TOKEN)
 
 def set_webhook():
-    s = TELEGRAM_BOT.setWebhook(key.WEBHOOK_TELEGRAM_BASE)
+    s = TELEGRAM_BOT.setWebhook(key.WEBHOOK_TELEGRAM_BASE, allowed_updates=['message'])
     if s:
         return "webhook setup ok"
     else:
@@ -33,6 +33,8 @@ def deal_with_request(request_json):
     # retrieve the message in JSON and then transform it to Telegram object
     update_obj = telegram.Update.de_json(request_json, TELEGRAM_BOT)
     message_obj = update_obj.message    
+    if message_obj.chat.type != 'private':
+        return
     user_obj = message_obj.from_user
     name = user_obj.first_name
     if user_obj.last_name:

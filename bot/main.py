@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from flask import Flask, Response, request, jsonify
 import key
 
@@ -46,7 +44,7 @@ def telegram_webhook_handler():
 
     telegram_bot.deal_with_request(request_json)
 
-    return ('',200)
+    return ('', 200)
 
 
 @app.route(key.WEBHOOK_TWITTER_ROUTING, methods=['GET'])
@@ -73,30 +71,52 @@ def twitter_webhook_handler():
     import twitter_bot
     event_json = request.get_json()
     twitter_bot.deal_with_event(event_json)
-    return ('',200)
+    return ('', 200)
 
 
-@app.route(key.WEBHOOK_SOLVER_ROUTING, methods=['POST'])
-def webhook_solver():        
+@app.route(key.WEBHOOK_ALEXA_SOLVER_ROUTING, methods=['POST'])
+def webhook_alexa_solver():        
     import json    
     request_json = request.get_json(force=True, silent=True)
-    logging.debug("SOLVER POST REQUEST: {}".format(json.dumps(request_json)))
+    logging.debug("ALEXA SOLVER WORDS POST REQUEST: {}".format(json.dumps(request_json)))
+    # logging.debug("Content-Type: {}".format(request.content_type))
     import solver    
     clue_keys = ['w1', 'w2', 'w3', 'w4', 'w5']    
-    if all(k in request_json for k in clue_keys):
+    if request_json and all(k in request_json for k in clue_keys):
         from ndb_user import get_webhook_solver_user
         user = get_webhook_solver_user()
         clues = [request_json[w] for w in clue_keys]
         solution, _, _ = solver.get_solution_from_clues(user, clues)
+        clues_str = ', '.join(clues)
         result = {
             'success': True,
-            'reason': 'success',
-            'solution': solution
+            'reason': 'success',            
+            'answer': 'Credo che la soluzione per le parole: {}, sia: <emphasis level="strong">{}</emphasis>!'.format(clues_str, solution)
         }
     else:
         result = {
             'success': False,
-            'reason': 'No keys w1, w2, w3, w4, w5 in input json'
+            'reason': 'No keys w1, w2, w3, w4, w5 in input json',
+            'answer': "Non ho capito le cinque parole."
+        }    
+    return jsonify(result)
+
+@app.route(key.WEBHOOK_ALEXA_LAST_GHIGLIOTTINA, methods=['GET'])
+def webhook_alexa_last():        
+    import json    
+    import ndb_ghigliottina
+    clues, solution, score, dt, today = ndb_ghigliottina.get_last_quizgame()
+    logging.debug("ALEXA SOLVER LAST GET REQUEST: clues={} solution={} score={} dt={}".format(clues, solution, score, dt))
+    clues_str = ', '.join(clues)
+    if today:
+        result = {
+            'success': True,
+            'answer': 'Credo che soluzione della ghigliottina di questa sera con le parole: {}, sia: <emphasis level="strong">{}</emphasis>!'.format(clues_str, solution)
+        }    
+    else:
+        result = {
+            'success': True,
+            'answer': 'Credo che la soluzione dell\'ultima ghigliottina con le parole: {}, sia: <emphasis level="strong">{}</emphasis>!'.format(clues_str, solution)
         }    
     return jsonify(result)
 

@@ -119,8 +119,13 @@ class Matrix_Dict(Matrix_Base):
 
     def genererate_game(self):
         import random
-        solution = random.choice(list(self.table.keys()))
-        clues_scores = sorted(self.table[solution].items(), key=lambda x: -x[1])
+        lex_file = "./diz_base_sorted.txt"  # "./lex_freq_1000.txt" 
+        with open(lex_file) as f_in:
+            lex = set(w.strip() for w in f_in.readlines())
+        solution_lex = lex.intersection(self.table.keys())
+        solution = random.choice(list(solution_lex))
+        clues_table = {clue:score for clue,score in self.table[solution].items() if clue in lex}
+        clues_scores = sorted(clues_table.items(), key=lambda x: -x[1])
         best_clues_scores = clues_scores[:5]
         #clues = random.sample(acceptable_clues, 5)
         clues = [x[0] for x in best_clues_scores]

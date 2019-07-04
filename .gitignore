@@ -6,3 +6,4 @@ bot/.vscode/
 bot/env
 src/env
 key.py
+.envFile

@@ -2,7 +2,7 @@
 
 from google.cloud import datastore
 from ndb_base import NDB_Base
-from ndb_user import NDB_User
+from ndb_user import NDB_User, get_quiztime_user
 import datetime
 
 # class Ghigliottina(ndb.Model):
@@ -36,6 +36,17 @@ def get_past_solution_score(clues):
         entry = matched_list[0]
         return entry['solution'], entry.get('score',0)
     return None, None
+
+def get_last_quizgame():    
+    from datetime import datetime
+    now = datetime.now()
+    quizgame_user = get_quiztime_user()
+    query = CLIENT.query(kind=KIND, ancestor=quizgame_user.key)
+    query.order = ['-dt']
+    entry = list(query.fetch(limit=1))[0]
+    entry_dt = entry['dt']
+    today = entry_dt.year == now.year and entry_dt.month == now.month and entry_dt.day == now.day
+    return entry['clues'], entry['solution'], entry['score'], entry['dt'], today
 
 def get_last_clues_solution_score():
     query = CLIENT.query(kind=KIND)

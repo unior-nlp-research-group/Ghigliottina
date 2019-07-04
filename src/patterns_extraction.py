@@ -60,6 +60,12 @@ def replacePrepDetCatWithPrepArt(tokens):
         tokens[i] = PREP_ART_CAT
     return found_indexes
 
+'''
+Replace each word in input with
+- 'NON_WORD_CAT' if not a valid word (numbers, non alphabetical symbols, etc...)
+- 'CAT' if in closed set cat (articles, prepositions, etc...)
+- 'UNK_WORD_CAT' if not in lex_set
+'''
 def replaceWordCats(tokens, lex_set=None, inplace=True):
     tokens_cat = tokens if inplace else list(tokens)
     for i,w in enumerate(tokens_cat):
@@ -127,3 +133,35 @@ def addPatternsFromLine(line, matrix, lex_set, weight=1, debug=False):
     return patterns_count
 
 
+def addPatternsFromLineInMongo(line, lex_set, source):        
+    from mongo_lex import Pattern
+    tokens = tokenizeLine(line)
+    if tokens == None:
+        return 0
+    tokens_cat = replaceWordCats(tokens, lex_set, inplace=False)
+    bigrams=utility.ngrams(tokens_cat,2)
+    trigrams=utility.ngrams(tokens_cat,3)    
+    fourgrams=utility.ngrams(tokens_cat,4)  
+    patterns_count = 0  
+    for i, bi in enumerate(bigrams):
+        # both tokens need to be valid words in dictionary
+        if bi[0] not in ALL_CATS and bi[1] not in ALL_CATS: 
+            surface = ' '.join(tokens[i:i+2])
+            abstract = ' '.join(bi)
+            Pattern.add_pattern(surface, abstract, tokens[i], tokens[i+1], source)
+            patterns_count += 1
+    for i,tri in enumerate(trigrams):
+        # first and last tokens need to be valid words in dictionary while middle tokens needs to be a cat (det, prep, ...)
+        if tri[0] not in ALL_CATS and tri[1] in ALL_PATTERN_CATS and tri[2] not in ALL_CATS:
+            surface = ' '.join(tokens[i:i+3])
+            abstract = ' '.join(tri)
+            Pattern.add_pattern(surface, abstract, tokens[i], tokens[i+2], source)
+            patterns_count += 1
+    for i,four in enumerate(fourgrams):
+        # first and last tokens need to be valid words in dictionary while middle tokens needs to be a cat (det, prep, ...)
+        if four[0] not in ALL_CATS and four[1] in ALL_PATTERN_CATS and four[2] in ALL_PATTERN_CATS and four[3] not in ALL_CATS:            
+            surface = ' '.join(tokens[i:i+4])
+            abstract = ' '.join(four)
+            Pattern.add_pattern(surface, abstract, tokens[i], tokens[i+3], source)
+            patterns_count += 1
+    return patterns_count
