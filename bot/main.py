@@ -111,7 +111,7 @@ def webhook_alexa_last():
     if today:
         result = {
             'success': True,
-            'answer': 'Credo che soluzione della ghigliottina di questa sera con le parole: {}, sia: <emphasis level="strong">{}</emphasis>!'.format(clues_str, solution)
+            'answer': 'Credo che la soluzione della ghigliottina di questa sera con le parole: {}, sia: <emphasis level="strong">{}</emphasis>!'.format(clues_str, solution)
         }    
     else:
         result = {
