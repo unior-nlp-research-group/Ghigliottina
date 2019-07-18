@@ -7,3 +7,4 @@ bot/env
 src/env
 key.py
 .envFile
+alexa/env

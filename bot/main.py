@@ -97,7 +97,7 @@ def webhook_alexa_solver():
         result = {
             'success': False,
             'reason': 'No keys w1, w2, w3, w4, w5 in input json',
-            'answer': "Non ho capito le cinque parole."
+            'answer': "Non ho capito le cinque parole. Prova iniziare la frase con, dammi la soluzione per le parole, seguito dalle cinque parole."
         }    
     return jsonify(result)
 
