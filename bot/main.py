@@ -36,13 +36,13 @@ def internal_error(error):
 
 @app.route(key.WEBHOOK_TELEGRAM_ROUTING, methods=['POST'])
 def telegram_webhook_handler():
-    import telegram_bot
+    import telegram_bot_dialogue
     import json
     request_json = request.get_json(force=True)
 
     logging.debug("TELEGRAM POST REQUEST: {}".format(json.dumps(request_json)))
 
-    telegram_bot.deal_with_request(request_json)
+    telegram_bot_dialogue.deal_with_request(request_json)
 
     return ('', 200)
 
@@ -51,8 +51,8 @@ def telegram_webhook_handler():
 def twitter_webhook_challenger():
     from twitter_bot import solve_crc_challenge
     logging.debug("in twitter_webhook_challenger function")
-    #import telegram_bot
-    #telegram_bot.report_master("call to twitter_webhook_challenger")
+    #import telegram_bot_dialogue
+    #telegram_bot_dialogue.report_master("call to twitter_webhook_challenger")
 
     crc_token = request.args.get('crc_token')
 

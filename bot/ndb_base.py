@@ -8,7 +8,7 @@ class NDB_Base(object):
     attributes = ['key','entry']
 
     def __getattr__(self, attr):
-        return self.entry[attr]
+        return self.entry.get(attr,None)
     
     def __setattr__(self, key, value):
         if key in self.attributes:

@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-
 def interactive_generator(matrix):
     while True:
         clues, solution, scores = matrix.genererate_game()

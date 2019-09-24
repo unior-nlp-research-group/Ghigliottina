@@ -81,10 +81,10 @@ def build():
     # scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
     
     print('Adding patterns in db')
-    # add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO)
+    add_patterns_from_corpus(corpora.DE_MAURO_POLIREMATICHE_INFO)
     # add_patterns_from_corpus(corpora.PAISA_RAW_INFO)    
     # add_patterns_from_corpus(corpora.PROVERBI_INFO)    
-    add_patterns_from_corpus(corpora.ITWAC_RAW_INFO)
+    # add_patterns_from_corpus(corpora.ITWAC_RAW_INFO)
     # add_patterns_from_corpus(corpora.WIKI_IT_TITLES_INFO)        
     # # add_patterns_from_corpus(corpora.WIKI_IT_TEXT_INFO, weight=1)        
     # corpora.addBigramFromPolirematicheInMatrix(matrix)    

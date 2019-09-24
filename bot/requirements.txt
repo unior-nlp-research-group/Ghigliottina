@@ -7,3 +7,4 @@ python-telegram-bot==11.1.0
 TwitterAPI==2.5.4
 grpcio
 pylint
+python-dotenv

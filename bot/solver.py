@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from parameters import DEFAULT_SOLUTION, UNFOUND_PAIR_SCORE, HIGH_CONFIDENCE_SCORE, GOOD_CONFIDENCE_SCORE, AVERAGE_CONFIDENCE_SCORE
-import ui
+import response_formatter
 import logging
 from ndb_ghigliottina import NDB_Ghigliottina
 
@@ -15,21 +15,21 @@ def get_solution_from_image(user, clues_list):
         reply_text, correct = get_solution_from_text(user, clues_list_str)    
         return reply_text, correct        
     else:
-        return ui.getImgProblemText(), False
+        return response_formatter.getImgProblemText(), False
     
 
 def get_solution_from_text(user, text):
     text = text.lower()
     from_twitter = user.from_twitter()
 
-    if any(x in text for x in ui.INFO_QUESTIONS_LOWER):
-        reply_text = ui.intro(from_twitter)
+    if any(x in text for x in response_formatter.INFO_QUESTIONS_LOWER):
+        reply_text = response_formatter.intro(from_twitter)
         return reply_text, True
 
     clues = tokenize_clues(text)
     
     if len(clues)!=5:
-        reply_text = ui.wrong_input(from_twitter, text)
+        reply_text = response_formatter.wrong_input(from_twitter, text)
         logging.debug('No 5 clues detected: {}'.format(clues))
         return reply_text, False
 
@@ -49,7 +49,7 @@ def get_solution_from_clues(user, clues):
     else:
         x_table = compute_solution_table(clues)                
         if len(x_table)==0:
-            reply_text = ui.no_solution_found(from_twitter, clues_str, DEFAULT_SOLUTION)
+            reply_text = response_formatter.no_solution_found(from_twitter, clues_str, DEFAULT_SOLUTION)
             best_solution = DEFAULT_SOLUTION
             best_score = UNFOUND_PAIR_SCORE
         else:    
@@ -77,12 +77,12 @@ def get_solution_from_clues(user, clues):
 
 def get_reply_based_on_score(from_twitter, clues_str, best_solution, best_score):
     if best_score > HIGH_CONFIDENCE_SCORE:
-        return ui.high_confidence_solution(from_twitter, clues_str, best_solution)
+        return response_formatter.high_confidence_solution(from_twitter, clues_str, best_solution)
     if best_score > GOOD_CONFIDENCE_SCORE:
-        return ui.good_confidence_solution(from_twitter, clues_str, best_solution)
+        return response_formatter.good_confidence_solution(from_twitter, clues_str, best_solution)
     if best_score > AVERAGE_CONFIDENCE_SCORE:
-        return ui.average_confidence_solution(from_twitter, clues_str, best_solution)
-    return ui.low_confidence_solution(from_twitter, clues_str, best_solution)  
+        return response_formatter.average_confidence_solution(from_twitter, clues_str, best_solution)
+    return response_formatter.low_confidence_solution(from_twitter, clues_str, best_solution)  
 
 
 def compute_solution_table(clues, exclude_blacklist_words = True):

@@ -4,7 +4,7 @@ connect('Lexicon')
 
 class Pattern(Document):
     surface = StringField(primary_key = True, max_length=100)
-    abstract = StringField(max_length=100)    
+    abstract = StringField(max_length=100)  # with <<<CAT>>>
     word_1 = StringField(max_length=30)
     word_2 = StringField(max_length=30)
     source_count = DictField() # source -> count

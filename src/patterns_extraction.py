@@ -132,9 +132,7 @@ def addPatternsFromLine(line, matrix, lex_set, weight=1, debug=False):
                 print("\t{} - {}".format(w[0],w[2]))            
     return patterns_count
 
-
-def addPatternsFromLineInMongo(line, lex_set, source):        
-    from mongo_lex import Pattern
+def get_patterns(line, lex_set):            
     tokens = tokenizeLine(line)
     if tokens == None:
         return 0
@@ -142,26 +140,42 @@ def addPatternsFromLineInMongo(line, lex_set, source):
     bigrams=utility.ngrams(tokens_cat,2)
     trigrams=utility.ngrams(tokens_cat,3)    
     fourgrams=utility.ngrams(tokens_cat,4)  
-    patterns_count = 0  
+    result = []
     for i, bi in enumerate(bigrams):
         # both tokens need to be valid words in dictionary
         if bi[0] not in ALL_CATS and bi[1] not in ALL_CATS: 
-            surface = ' '.join(tokens[i:i+2])
-            abstract = ' '.join(bi)
-            Pattern.add_pattern(surface, abstract, tokens[i], tokens[i+1], source)
-            patterns_count += 1
+            bi_abstract = [t if t in ALL_PATTERN_CATS else '_' for t in bi]
+            result.append({
+                'surface': ' '.join(tokens[i:i+2]),
+                'abstract': ' '.join(bi_abstract),
+                'w1': tokens[i],
+                'w2': tokens[i+1]
+            })
     for i,tri in enumerate(trigrams):
         # first and last tokens need to be valid words in dictionary while middle tokens needs to be a cat (det, prep, ...)
         if tri[0] not in ALL_CATS and tri[1] in ALL_PATTERN_CATS and tri[2] not in ALL_CATS:
-            surface = ' '.join(tokens[i:i+3])
-            abstract = ' '.join(tri)
-            Pattern.add_pattern(surface, abstract, tokens[i], tokens[i+2], source)
-            patterns_count += 1
+            tri_abstract = [t if t in ALL_PATTERN_CATS else '_' for t in tri]
+            result.append({
+                'surface': ' '.join(tokens[i:i+3]),
+                'abstract': ' '.join(tri_abstract),
+                'w1': tokens[i],
+                'w2': tokens[i+2]
+            })
     for i,four in enumerate(fourgrams):
         # first and last tokens need to be valid words in dictionary while middle tokens needs to be a cat (det, prep, ...)
         if four[0] not in ALL_CATS and four[1] in ALL_PATTERN_CATS and four[2] in ALL_PATTERN_CATS and four[3] not in ALL_CATS:            
-            surface = ' '.join(tokens[i:i+4])
-            abstract = ' '.join(four)
-            Pattern.add_pattern(surface, abstract, tokens[i], tokens[i+3], source)
-            patterns_count += 1
-    return patterns_count
+            four_abstract = [t if t in ALL_PATTERN_CATS else '_' for t in four]
+            result.append({
+                'surface': ' '.join(tokens[i:i+4]),
+                'abstract': ' '.join(four_abstract),
+                'w1': tokens[i],
+                'w2': tokens[i+3]
+            })
+    return result
+
+def addPatternsFromLineInMongo(line, lex_set, source):        
+    from mongo_lex import Pattern
+    patterns = get_patterns(line, lex_set)
+    for p in patterns:
+        Pattern.add_pattern(p['surface'], p['abstract'], p['w1'], p['w2'], source)
+    return len(patterns)

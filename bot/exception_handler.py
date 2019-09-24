@@ -7,7 +7,7 @@ def exception_reporter(func):
         try:
             func(*args)
         except Exception:
-            from telegram_bot import report_master
+            from telegram_bot_dialogue import report_master
             report_string = '❗️ Exception {}'.format(traceback.format_exc()) #.splitlines()
             logging.error(report_string)          
             try:  

@@ -3,8 +3,6 @@
 from parameters import TWITTER_MAX_LEN
 from key import TWITTER_BOT_SCREEN_NAME
 
-BUTTON_INFO = 'ℹ️ INFO'
-
 INFO_QUESTIONS_LOWER = ['chi sei?', 'cosa fai?', 'come funzioni?']
 
 def restrict_text_to_twitter_limit(reply, text):
