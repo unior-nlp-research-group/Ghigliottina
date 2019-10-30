@@ -6,9 +6,9 @@ from key import TWITTER_BOT_SCREEN_NAME
 INFO_QUESTIONS_LOWER = ['chi sei?', 'cosa fai?', 'come funzioni?']
 
 def restrict_text_to_twitter_limit(reply, text):
-    char_available = TWITTER_MAX_LEN - len(reply)
+    char_available = TWITTER_MAX_LEN - len(reply) - 22
     if len(text) > char_available:
-        return text[:char_available-20] + '...'
+        return text[:char_available] + '...'
     return text
 
 def intro(from_twitter):
