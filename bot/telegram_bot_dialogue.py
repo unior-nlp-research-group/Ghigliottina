@@ -35,6 +35,11 @@ def report_master(message):
 def restart_user(user):
     redirect_to_state(user, state_INITIAL, message_obj=None)
 
+def restart_user_old_keyboard(user):
+    send_message(user, ux.MSG_WRONG_INPUT_OLD_KEYBOARD)
+    send_typing_action(user, sleep_secs=1)    
+    redirect_to_state(user, state_INITIAL, message_obj=None)
+
 
 # ================================
 # REDIRECT TO STATE
@@ -92,7 +97,7 @@ def state_INITIAL(user, message_obj):
                         msg += "- {}: {}\n".format(a, ndb_user.get_user_count(a))
                     send_message(user, msg)
                 else:
-                    assert(False)
+                    restart_user_old_keyboard(user)
             elif ux.text_is_button(text_input):
                 send_message(user, ux.MSG_WRONG_BUTTON_INPUT, kb)
             else:
@@ -117,7 +122,7 @@ def state_SOLVER(user, message_obj):
                 if text_input == ux.BUTTON_BACK:
                     restart_user(user)
                 else:
-                    assert(False)
+                    restart_user_old_keyboard(user)                    
             elif ux.text_is_button(text_input):
                 send_message(user, ux.MSG_WRONG_BUTTON_INPUT, kb)
             else:
@@ -180,7 +185,7 @@ def state_GENERATOR(user, message_obj):
                         send_typing_action(user, sleep_secs=1)
                         redirect_to_state(user, state_CONTINUE)
                 else:
-                    assert(False)
+                    restart_user_old_keyboard(user)
             elif ux.text_is_button(text_input):
                 send_message(user, ux.MSG_WRONG_BUTTON_INPUT)
             else:
@@ -215,7 +220,7 @@ def state_CONTINUE(user, message_obj):
                 elif text_input == ux.BUTTON_NO:                    
                     restart_user(user)
                 else:
-                    assert(False)
+                    restart_user_old_keyboard(user)
             elif ux.text_is_button(text_input):
                 send_message(user, ux.MSG_WRONG_BUTTON_INPUT)
             else:

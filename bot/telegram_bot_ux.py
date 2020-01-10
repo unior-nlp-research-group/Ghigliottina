@@ -41,6 +41,7 @@ MSG_CONTINUE = "🔁 Vuoi continuare?"
 MSG_TOO_EARLY = "⏰ Troppo presto... prova a pensarci ancora un po'."
 
 MSG_SEND_PHOTO_NOT_DOCUMENT = "⛔️ Mandami l'immagine come *Foto* e non come documento."
+MSG_WRONG_INPUT_OLD_KEYBOARD = "⛔️ Input non valido, probabilmente hai premuto un tasto che non è più valido nell'interfaccia aggiornata. Sarai reindirizzato/a nella schermata iniziale."
 MSG_WRONG_INPUT_ONLY_TEXT_ACCEPTED = "⛔️ Input non valido, devi inserire solo del testo."
 MSG_WRONG_INPUT_USE_TEXT = '⛔ Input non valido, per favore inserisci del testo.'
 MSG_WRONG_INPUT_USE_TEXT_OR_BUTTONS = '⛔️ Input non valido, per favore inserisci del testo o usa i pulsanti 🎛'
