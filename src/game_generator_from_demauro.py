@@ -17,7 +17,7 @@ def convert_defaultdict_to_dict(matrix):
         result[w] = dict(d)
     return result
 
-def get_polirematiche_patrix():
+def get_polirematiche_matrix():
     poli_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZ_POLI_WORD_SORTED_FILE))
     sost_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZIONARIO_SOSTANTIVI_AUGMENTED_PAISA_FILE))
     agg_lexicon = list(lexicon.loadLexiconFromFile(corpora.DIZIONARIO_AGGETTIVI_AUGMENTED_PAISA_FILE))
@@ -124,7 +124,7 @@ def interactive_generator(matrix):
             return  
 
 if __name__ == "__main__":
-    matrix = get_polirematiche_patrix()
+    matrix = get_polirematiche_matrix()
     save_matrix_to_file(matrix)
     # matrix = get_matrix_from_file()
     # interactive_generator(matrix)
