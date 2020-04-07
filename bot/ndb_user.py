@@ -83,3 +83,13 @@ def get_user_count(application):
     q.add_filter('application', '=', application)
     q.keys_only()
     return len(list(q.fetch()))
+
+def stats():
+    telegram_count = get_user_count('telegram')
+    twitter_count = get_user_count('twitter')
+    print('Telegram users: {}'.format(telegram_count))
+    print('Twitter users: {}'.format(twitter_count))
+
+if __name__ == '__main__':
+    stats()
+    

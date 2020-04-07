@@ -58,16 +58,32 @@ def get_last_clues_solution_score():
     return None, None, None
 
 def iter_ghigliottine():
-    query = CLIENT.query(kind=KIND)
+    query = CLIENT.query(kind=KIND)    
     def get_next_page(cursor):
-        query_iter = query.fetch(start_cursor=cursor, limit=5)
+        query_iter = query.fetch(start_cursor=cursor, limit=500)
         page = next(query_iter.pages)
         entries = list(page)
         next_cursor = query_iter.next_page_token
         return entries, next_cursor
     cursor = None
+    iter = 0
     while(True):    
+        iter += 1
+        print("Iter {}".format(iter))
         entries, cursor = get_next_page(cursor)
-        print("{} {}".format(len(entries),cursor))
+        for e in entries:
+            yield e
+        # print("{} {}".format(len(entries),cursor))
         if cursor == None:
             break
+
+def stats():
+    ghigliottine = [','.join(g['clues']) for g in iter_ghigliottine()]
+    ghigliottine_set = set(ghigliottine)
+    print("Number of ghigliottine: {}".format(len(ghigliottine)))
+    print("Number of unique ghigliottine: {}".format(len(ghigliottine_set)))
+
+
+if __name__ == '__main__':
+    stats()
+    
