@@ -9,7 +9,9 @@ import html
 DE_MAURO_PATH = '/Users/fedja/scratch/CORPORA/DE_MAURO/'
 CERCA_ALPHA = DE_MAURO_PATH + 'cerca_alpha'
 PAROLE_DIZIONARIO = DE_MAURO_PATH + 'dizionario.internazionale.it/parola'
+LETTERS_DIR = DE_MAURO_PATH + 'dizionario.internazionale.it/lettera'
 POLIREMATICHE_FILE = DE_MAURO_PATH + 'polirematiche.txt'
+VERBS_PROCOMPL_FILE = DE_MAURO_PATH + 'verbs_procompl.txt'
 POLIREMATICHE_SORTED_FILE = DE_MAURO_PATH + 'polirematiche_sorted.txt'
 DIZIONARIO_BASE_FILE = DE_MAURO_PATH + 'diz_base.txt'
 DIZIONARIO_BASE_SOSTANTIVI_FILE = DE_MAURO_PATH + 'diz_base_sostantivi.txt'
@@ -51,6 +53,25 @@ def buildPolirematiche():
                         polirematiche_set.add(entry)
     with open(POLIREMATICHE_FILE,'w') as f_out:
         for p in sorted(polirematiche_set):
+            f_out.write(p + '\n')
+
+def build_verbs_procompl():   
+    from bs4 import BeautifulSoup 
+    alpha_files = [os.path.join(LETTERS_DIR,f) for f in sorted(os.listdir(LETTERS_DIR)) if f.endswith('.html')]
+    v_procompl_set = set()
+    for f in alpha_files:
+        print('Reading file: {}'.format(f))
+        html = open(f).read()
+        soup = BeautifulSoup(html) #"lxml"
+        for li in soup.find_all("li", attrs={'class': 'li_elements_result_lemma'}): 
+            title = li.find('a')
+            pos = li.find('em')
+            if pos==None or pos.text.strip() != '(v.procompl.)':
+                continue            
+            examples = li.find('span')
+            v_procompl_set.add('{}: {}'.format(title.text, examples.text))                
+    with open(VERBS_PROCOMPL_FILE,'w') as f_out:
+        for p in sorted(v_procompl_set):
             f_out.write(p + '\n')
 
 def readPolirematicheFromFile(lowercase = True, pos=False):
@@ -195,10 +216,25 @@ def check_dizionario_base_base_coverage():
     report_coverage_file = DE_MAURO_PATH + 'diz_base_game_coverage.txt'    
     scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, report_coverage_file) 
 
+def test_bs():
+    from bs4 import BeautifulSoup 
+    html = '<li class="li_elements_result_lemma"> <a accesskey="1" class="serp-lemma-title" href="https://dizionario.internazionale.it/parola/abiogenesi" title="">abiogenesi</a>\xa0<br/><em class="text_15">(s.f.inv.)</em> <span class="text_15">TS biol. ipotetica generazione di organismi viventi da materia non vivente…  </span>\n</li>'
+    # html = "<li class='li_elements_result_lemma' >  <a class='serp-lemma-title' href=\"https://dizionario.internazionale.it/parola/abitare\" accesskey=\"15\" title >abitare</a>&nbsp;<br /><em  class='text_15'>(v.intr. e tr., s.m.)</em> <span class='text_15'>1. v.intr. (avere) FO vivere abitualmente in un luogo: abitare in citt&agrave;, in campagna; &#8230;  </span> </em></li>"
+    soup = BeautifulSoup(html, "lxml")
+    li = soup.find('li', attrs={'class': 'li_elements_result_lemma'})
+    title = li.find('a')
+    pos = li.find('em')
+    example = li.find('span')
+    print(li)
+    print(title.text)
+    print(pos.text)
+    print(example.text)
 
 if __name__=='__main__':
+    # test_bs()
+    build_verbs_procompl()
     #checkParoleDizionario()
     #checkDizionarioBase()
-    check_dizionario_polirematiche_base_coverage()
+    # check_dizionario_polirematiche_base_coverage()
             
                     
