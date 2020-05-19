@@ -35,9 +35,9 @@ def build_and_eval():
     print('Lex size: {}'.format(len(lex_set)))
     print('Solution Lex size: {}'.format(len(lex_solution_set)))
     lexicon.printLexFreqToFile(lexicon_freq, LEX_FREQ_FILE)
-    solution_lexicon_freq = {w:1 for w in lex_solution_set}   
+    # solution_lexicon_freq = {w:1 for w in lex_solution_set}   
     print('Computing lex_set coverage')
-    scorer.computeCoverageOfGameWordLex(lexicon_freq, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE, solution_lexicon_freq)
+    scorer.computeCoverageOfGameWordLex(lex_set, lex_solution_set, corpora.GAME_SET_100_FILE, COVERAGE_WORD_GAME100_FILE)
     print('Building association matrix')
     matrix = matrix_dict.Matrix_Dict(lex_set, lex_solution_set)
     matrix.add_patterns_from_corpus(corpora.PAISA_RAW_INFO)

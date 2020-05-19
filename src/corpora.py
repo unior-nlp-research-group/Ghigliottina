@@ -3,7 +3,7 @@
 
 import gzip
 
-DATA_DIR = "/Users/fedja/GDrive/Joint Projects/Ghigliottina/data/"
+DATA_DIR = "/Users/fedja/GDrive/CloudProjects/Ghigliottina/data/"
 GAME_SET_100_FILE = DATA_DIR + "game_set_100.tsv"
 NLP4FUN_DEV_XML_v1_FILE = DATA_DIR + "nlp4fun_train_v1.xml"
 NLP4FUN_DEV_TSV_v1_FILE = DATA_DIR + "nlp4fun_train_v1.tsv"
