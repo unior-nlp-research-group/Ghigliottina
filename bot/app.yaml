@@ -1,5 +1,6 @@
 # google project id: unior4nlp
 # url: https://unior4nlp.appspot.com
+# deploy test/production
 
 runtime: python37
 

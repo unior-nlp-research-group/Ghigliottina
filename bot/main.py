@@ -126,7 +126,7 @@ def send_quiztime_response_callback(clues, callback_url, game_id):
     from ndb_user import get_quiztime_user
     user = get_quiztime_user()
     solution, _, _ = solver.get_solution_from_clues(user, clues)        
-    headers = {'Authorization': key.QUIZTIME_AUTHORIZATION}
+    headers = {'Authorization': key.QUIZTIME_SECRET}
     callback_data = {
         'game_id': game_id,
         'solution': solution,
@@ -137,7 +137,7 @@ def send_quiztime_response_callback(clues, callback_url, game_id):
     #logging.debug("Return status: {}".format(r.status_code))
 
 @app.route(key.WEBHOOK_QUIZTIME_ROUTING, methods=['POST'])
-def quiztime_solver_handler():
+def quiztime_webhook_handler():
     import json    
     import threading
     request_json = request.get_json(force=True)
@@ -147,7 +147,7 @@ def quiztime_solver_handler():
     game_id_key = 'game_id'
     callback_key = 'callback'
     required_keys = clue_keys + [game_id_key, callback_key]
-    if auth_key == key.QUIZTIME_INPUT_AUTH and all(k in request_json for k in required_keys):
+    if auth_key == key.QUIZTIME_AUTHORIZATION and all(k in request_json for k in required_keys):
         clues = [request_json[w] for w in clue_keys]        
         callback_url = request_json[callback_key]        
         game_id = request_json[game_id_key]        
@@ -159,3 +159,52 @@ def quiztime_solver_handler():
     else:
         result = {'success': False, 'reason': 'Invald request'}
     return jsonify(result)
+
+
+def send_ghigliottinai_response_callback(clues, callback_url, game_id):
+    import requests
+    import solver
+    import ndb_user
+    # user = ndb_user.get_ghigliottinai_user()
+    # solution, _, _ = solver.get_solution_from_clues(user, clues)        
+    solution = 'test'
+    headers = {'Authorization': key.GHIGLIOTTINAI_SECRET}
+    callback_data = {
+        'game_id': game_id,
+        'solution': solution,
+        'uuid': key.GHIGLIOTTINAI_USER_ID
+    }   
+    logging.debug('Sending POST request to ghigliottinai: {}'.format(callback_url))
+    r = requests.post(callback_url, headers=headers, data=callback_data)
+    logging.debug("Return status from ghigliottinai: {}".format(r.status_code))
+
+@app.route(key.WEBHOOK_GHIGLIOTTINAI_ROUTING, methods=['POST'])
+def ghigliottinai_webhook_handler():
+    import json
+    import threading
+    request_json = request.get_json(force=True)    
+    logging.debug("GHIGLIOTTINAI POST REQUEST: {}".format(json.dumps(request_json)))
+    auth_key = request.headers.get('Authorization')
+    logging.debug("AUTHORIZATION KEY: {}".format(auth_key))
+    clue_keys = ['w1', 'w2', 'w3', 'w4', 'w5']
+    game_id_key = 'game_id'
+    callback_key = 'callback'
+    required_keys = clue_keys + [game_id_key, callback_key]
+    if auth_key == key.GHIGLIOTTINAI_AUTHORIZATION and all(k in request_json for k in required_keys):
+        clues = [request_json[w] for w in clue_keys]        
+        callback_url = request_json[callback_key]        
+        game_id = request_json[game_id_key]       
+        threading.Thread(target=send_ghigliottinai_response_callback,
+            args=(clues, callback_url, game_id)
+        ).start() 
+        result = {'success': True}     
+    else:
+        result = {'success': False, 'reason': 'Invald request'}  
+    return jsonify(result)     
+
+if __name__ == '__main__':
+    clues = [None, None, None, None, None]
+    callback_url = 'https://ghigliottina.marlove.net/api/v1/create/wh_solution.php'
+    game_id = -1
+    send_ghigliottinai_response_callback(clues, callback_url, game_id)
+    

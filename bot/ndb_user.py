@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from google.cloud import datastore
 import datetime
 from ndb_base import NDB_Base
@@ -7,7 +5,6 @@ import key
 
 CLIENT = datastore.Client()
 KIND = 'User'
-
 
 class NDB_User(NDB_Base):
 
@@ -72,6 +69,10 @@ class NDB_User(NDB_Base):
 
 def get_quiztime_user():
     user = NDB_User('quiztime', 0)
+    return user
+
+def get_ghigliottinai_user():
+    user = NDB_User('ghigliottinai', 0)
     return user
 
 def get_webhook_solver_user():

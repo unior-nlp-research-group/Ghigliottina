@@ -132,7 +132,7 @@ def test():
     print(text_list)
 
 def test_url():
-    url = 'https://api.telegram.org/file/bot692434140:AAGO2Vx__BS9-PP_qhup-mKasOlfxTQt6qo/photos/file_3.jpg'
+    url = 'https://api.telegram.org/file/{}/photos/file_3.jpg'.format(key.TELEGRAM_API_TOKEN)
     img_content = get_image_content_by_uri(url)
     text_list = detect_clues(img_content)
     print(text_list)
